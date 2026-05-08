@@ -35,6 +35,21 @@
         /* Chatbot Animations */
         .chat-enter { animation: slideUp 0.3s ease-out forwards; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Accessibility Styles */
+        .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+        .highlight-links button, .highlight-links a, .highlight-links select, .highlight-links input {
+            outline: 2px solid #006771 !important;
+            outline-offset: 2px !important;
+        }
+        .dark .highlight-links button, .dark .highlight-links a, .dark .highlight-links select, .dark .highlight-links input {
+            outline-color: #008c99 !important;
+        }
     </style>
 
     <!-- Import Map for Stable Loading -->
@@ -64,8 +79,26 @@
             Link, Check, AlertTriangle, Moon, Sun, Send, MessageCircle, Lock,
             ChevronDown, ChevronLeft, CreditCard, FileBadge, Image as ImageIcon, 
             Ban, Gift, ScrollText, Upload, Wallet, FileSignature, PieChart, Medal,
-            Volume2, VolumeX, CalendarCheck, Video
+            Volume2, VolumeX, CalendarCheck, Video, Accessibility, Trash2,
+            Activity, MousePointerClick
         } from 'lucide-react';
+
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, doc, setDoc, onSnapshot, collection, addDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        let app, auth, db;
+        try {
+            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+            if (firebaseConfig) {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+            }
+        } catch (e) {
+            console.error("Firebase init error:", e);
+        }
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         // --- Mock Data ---
         const studentData = {
@@ -101,6 +134,7 @@
                 'dept-add': 'إضافة مقرر (القسم)',
                 'dept-change': 'تغيير شعبة (القسم)',
                 'dept-drop': 'حذف مقرر (القسم)',
+                'dept-multi': 'طلب مزدوج / استبدال',
                 'reg-requests': 'طلبات التسجيل',
                 withdraw: 'انسحاب من مقرر',
                 // Requests Sub-items
@@ -110,6 +144,8 @@
                 'major-change-view': 'عرض طلبات تغيير التخصص',
                 'office-hours-book': 'حجز ساعات مكتبية',
                 'office-hours-view': 'مواعيدي المكتبية',
+                'recommendation-new': 'طلب رسالة توصية',
+                'recommendation-view': 'التوصيات الأكاديمية',
                 // Personal Sub-items
                 penalties: 'العقوبات',
                 rewards: 'المكافآت',
@@ -177,6 +213,7 @@
                 'dept-add': 'Add Course (Dept Approval)',
                 'dept-change': 'Change Section (Dept Approval)',
                 'dept-drop': 'Drop Course (Dept Approval)',
+                'dept-multi': 'Multi-Request / Swap',
                 'reg-requests': 'Registration Requests',
                 withdraw: 'Course Withdrawal',
                 // Requests Sub-items
@@ -186,6 +223,8 @@
                 'major-change-view': 'View Major Change Requests',
                 'office-hours-book': 'Book Office Hours',
                 'office-hours-view': 'My Office Hours',
+                'recommendation-new': 'Request Recommendation',
+                'recommendation-view': 'Academic Recommendations',
                 // Personal Sub-items
                 penalties: 'Penalties & Violations', 
                 rewards: 'Rewards Record', 
@@ -1246,11 +1285,10 @@
                                         </div>
                                     </div>
                                     <div className="p-4 space-y-4 flex-1">
-                                        <div className="flex justify-between items-center text-[10px] text-gray-400 mb-2"><span>{labels.assessment}</span><div className="flex gap-3"><span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-primary"></div> {labels.yourGrade}</span><span className="flex items-center gap-1"><div className="w-0.5 h-3 bg-gray-400"></div> {labels.classAvg}</span></div></div>
                                         {course.components.map((comp, cIdx) => (
                                             <div key={cIdx} className="group">
                                                 <div className="flex justify-between items-end mb-1"><span className="text-xs font-bold text-gray-600 dark:text-gray-400">{comp.label}</span><div className="flex items-end gap-1"><span className={`text-sm font-bold font-mono ${course.isPending && comp.label === componentLabels.final ? 'text-gray-400' : getScoreColorText(comp.student, comp.max)}`}>{course.isPending && comp.label === componentLabels.final ? '--' : comp.student}</span><span className="text-[10px] text-gray-400">/ {comp.max}</span></div></div>
-                                                <div className="relative h-2.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-visible"><div className={`absolute top-0 ${isAr ? 'right-0' : 'left-0'} h-full rounded-full ${getScoreColor(comp.student, comp.max).split(' ')[0]}`} style={{ width: `${(comp.student / comp.max) * 100}%`, opacity: course.isPending && comp.label === componentLabels.final ? 0.3 : 1 }}></div><div className={`absolute top-[-2px] bottom-[-2px] w-0.5 bg-gray-800 dark:bg-white z-10 shadow-[0_0_2px_rgba(0,0,0,0.5)]`} style={{ [isAr ? 'right' : 'left']: `${(comp.avg / comp.max) * 100}%` }} title={`${labels.tooltipAvg} ${comp.avg}`}></div></div><div className={`text-[9px] text-gray-400 mt-0.5 dir-ltr font-mono ${isAr ? 'text-left' : 'text-right'}`}>Avg: {comp.avg}</div>
+                                                <div className="relative h-2.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-visible"><div className={`absolute top-0 ${isAr ? 'right-0' : 'left-0'} h-full rounded-full ${getScoreColor(comp.student, comp.max).split(' ')[0]}`} style={{ width: `${(comp.student / comp.max) * 100}%`, opacity: course.isPending && comp.label === componentLabels.final ? 0.3 : 1 }}></div><div className={`absolute top-[-2px] bottom-[-2px] w-0.5 bg-gray-800 dark:bg-white z-10 shadow-[0_0_2px_rgba(0,0,0,0.5)]`} style={{ [isAr ? 'right' : 'left']: `${(comp.avg / comp.max) * 100}%` }} title={`${labels.tooltipAvg} ${comp.avg}`}></div></div><div className={`text-[9px] text-gray-400 mt-0.5 ${isAr ? 'text-left' : 'text-right'}`}>{isAr ? 'المتوسط' : 'Avg'}: <span className="font-mono">{comp.avg}</span></div>
                                             </div>
                                         ))}
                                     </div>
@@ -1687,7 +1725,7 @@
         };
 
         // 7. الحذف والإضافة
-        const AddDropPage = ({ onBack, lang }) => {
+        const AddDropPage = ({ onBack, lang, user, db, appId }) => {
             const isAr = lang === 'ar';
             
             const t = {
@@ -1743,10 +1781,7 @@
                 { code: 'ISL101', hours: 2, sections: [ { id: 's4', section: '401', profAr: 'د. عبدالرحمن', profEn: 'Dr. Abdulrahman', time: '08:00 - 08:50', daysAr: 'عن بعد', daysEn: 'Online', status: 'open' }, { id: 's5', section: '402', profAr: 'د. عبدالله', profEn: 'Dr. Abdullah', time: '09:00 - 09:50', daysAr: 'عن بعد', daysEn: 'Online', status: 'open' } ] }, 
                 { code: 'CS204', hours: 3, sections: [ { id: 's6', section: '201', profAr: 'د. علي القحطاني', profEn: 'Dr. Ali', time: '10:00 - 10:50', daysAr: 'الأحد - الثلاثاء - الخميس', daysEn: 'Sun - Tue - Thu', status: 'open' } ] } 
             ]);
-            const [enrolled, setEnrolled] = useState([ 
-                { id: 1, code: 'CS101', hours: 3, section: '201', profAr: 'د. خالد', profEn: 'Dr. Khaled', time: '08:00 - 08:50' }, 
-                { id: 2, code: 'MATH101', hours: 4, section: '105', profAr: 'د. مصطفى', profEn: 'Dr. Mustafa', time: '09:00 - 09:50' } 
-            ]);
+            const [enrolled, setEnrolled] = useState([]);
             
             const [filterTime, setFilterTime] = useState('');
             const [selectedCourseForAdd, setSelectedCourseForAdd] = useState(null);
@@ -1755,6 +1790,35 @@
             
             // --- NEW: Timer State Logic ---
             const [timeLeft, setTimeLeft] = useState({ days: 2, hours: 14, minutes: 30, seconds: 59 });
+
+            // --- NEW: Firestore Realtime Sync ---
+            useEffect(() => {
+                if (!user || !db) {
+                    setEnrolled([ 
+                        { id: 1, code: 'CS101', hours: 3, section: '201', profAr: 'د. خالد', profEn: 'Dr. Khaled', time: '08:00 - 08:50' }, 
+                        { id: 2, code: 'MATH101', hours: 4, section: '105', profAr: 'د. مصطفى', profEn: 'Dr. Mustafa', time: '09:00 - 09:50' } 
+                    ]);
+                    return;
+                }
+
+                const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'registration', 'current');
+                
+                const unsubscribe = onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        setEnrolled(docSnap.data().courses || []);
+                    } else {
+                        const defaultCourses = [ 
+                            { id: 1, code: 'CS101', hours: 3, section: '201', profAr: 'د. خالد', profEn: 'Dr. Khaled', time: '08:00 - 08:50' }, 
+                            { id: 2, code: 'MATH101', hours: 4, section: '105', profAr: 'د. مصطفى', profEn: 'Dr. Mustafa', time: '09:00 - 09:50' } 
+                        ];
+                        setEnrolled(defaultCourses);
+                        setDoc(docRef, { courses: defaultCourses }).catch(console.error);
+                    }
+                }, (error) => console.error("Firestore error:", error));
+
+                return () => unsubscribe();
+            }, [user, db, appId]);
+            // ------------------------------------
 
             useEffect(() => {
                 const timer = setInterval(() => {
@@ -1781,17 +1845,28 @@
                 setConfirmationModal({ type: 'add', item: { ...course, ...section, id: Date.now() }, title: t.addTitle, text: `${t.addMsg} ${getName(course.code)} - ${t.section} ${section.section}?` }); 
             };
             
-            const executeAction = () => { 
+            const executeAction = async () => { 
                 const action = confirmationModal.type; 
                 const item = confirmationModal.item; 
+                let newEnrolled = [...enrolled];
+                
                 if (action === 'drop') { 
-                    setEnrolled(enrolled.filter(c => c.id !== item.id)); 
+                    newEnrolled = enrolled.filter(c => c.id !== item.id); 
                     setMessage({ text: t.successDrop, type: 'success' }); 
                 } else if (action === 'add') { 
-                    setEnrolled([...enrolled, item]); 
+                    newEnrolled = [...enrolled, item]; 
                     setSelectedCourseForAdd(null); 
                     setMessage({ text: t.successAdd, type: 'success' }); 
                 } 
+                
+                setEnrolled(newEnrolled); // تحديث واجهة المستخدم فوراً
+                
+                // حفظ التعديلات في قاعدة البيانات
+                if (user && db) {
+                    const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'registration', 'current');
+                    await setDoc(docRef, { courses: newEnrolled }).catch(console.error);
+                }
+
                 setConfirmationModal(null); 
                 setTimeout(() => setMessage(null), 3000); 
             };
@@ -2104,6 +2179,173 @@
             );
         };
 
+        // --- NEW: طلب مزدوج / استبدال (Multi-Request Page) ---
+        const MultiRequestPage = ({ onBack, lang }) => {
+            const isAr = lang === 'ar';
+            
+            const t = {
+                title: isAr ? 'طلب مزدوج / استبدال' : 'Multi-Request / Swap',
+                desc: isAr ? 'يمكنك رفع أكثر من إجراء في نفس الطلب (مثال: حذف مقرر وإضافة مقرر آخر بدلاً منه) ليتم دراستها معاً كحالة واحدة.' : 'You can submit multiple actions in one request (e.g., drop a course and add another) to be processed together.',
+                actionType: isAr ? 'نوع الإجراء' : 'Action Type',
+                selectCourse: isAr ? 'المقرر' : 'Course',
+                sectionNum: isAr ? 'رقم الشعبة' : 'Section Number',
+                addMore: isAr ? 'إضافة إجراء آخر للطلب' : 'Add another action',
+                justification: isAr ? 'مبررات الطلب المزدوج (هام)' : 'Justification for combined request (Important)',
+                submit: isAr ? 'إرسال الطلب المزدوج' : 'Submit Combined Request',
+                successTitle: isAr ? 'تم إرسال الطلب بنجاح' : 'Request Submitted Successfully',
+                reqId: isAr ? 'رقم الطلب:' : 'Request ID:',
+                backMenu: isAr ? 'عودة للقائمة' : 'Back to Menu',
+                types: {
+                    add: isAr ? 'إضافة مقرر' : 'Add Course',
+                    drop: isAr ? 'حذف مقرر' : 'Drop Course',
+                    change: isAr ? 'تغيير شعبة' : 'Change Section'
+                }
+            };
+
+            const myCourses = [
+                { code: 'CS204', nameAr: 'برمجة 2 - CS204', nameEn: 'Programming 2 - CS204' },
+                { code: 'CS205', nameAr: 'قواعد بيانات - CS205', nameEn: 'Databases - CS205' },
+                { code: 'ISL102', nameAr: 'ثقافة إسلامية 2 - ISL102', nameEn: 'Islamic Culture 2 - ISL102' }
+            ];
+
+            const offeredCourses = [
+                { code: 'SE301', nameAr: 'هندسة برمجيات - SE301', nameEn: 'Software Engineering - SE301' },
+                { code: 'CS305', nameAr: 'نظم تشغيل - CS305', nameEn: 'Operating Systems - CS305' },
+                { code: 'MATH201', nameAr: 'إحصاء هندسي - MATH201', nameEn: 'Engineering Statistics - MATH201' }
+            ];
+
+            // State for multiple actions
+            const [actions, setActions] = useState([{ id: Date.now(), type: '', course: '', section: '' }]);
+            const [justification, setJustification] = useState('');
+            const [submitted, setSubmitted] = useState(false);
+
+            const handleAddAction = () => {
+                if (actions.length < 4) { // Max 4 actions
+                    setActions([...actions, { id: Date.now(), type: '', course: '', section: '' }]);
+                }
+            };
+
+            const handleRemoveAction = (id) => {
+                setActions(actions.filter(a => a.id !== id));
+            };
+
+            const updateAction = (id, field, value) => {
+                setActions(actions.map(a => a.id === id ? { ...a, [field]: value } : a));
+            };
+
+            const isFormValid = actions.every(a => a.type && a.course && (a.type === 'drop' || a.section)) && justification.trim().length > 0;
+
+            if(submitted) {
+                return (
+                    <div className="animate-fade-in text-center py-20">
+                        <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6"><Check size={40}/></div>
+                        <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">{t.successTitle}</h3>
+                        <p className="text-gray-500 mb-6">{t.reqId} #REQ-{Math.floor(Math.random()*10000)}</p>
+                        <button onClick={onBack} className="bg-gray-100 text-gray-700 px-6 py-2 rounded-lg font-bold hover:bg-gray-200">{t.backMenu}</button>
+                    </div>
+                )
+            }
+
+            return (
+                <div className="animate-fade-in space-y-6">
+                    <HeaderPage title={t.title} onBack={onBack} lang={lang} />
+                    
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 p-4 rounded-xl flex gap-3 text-blue-800 dark:text-blue-200 text-sm">
+                        <AlertCircle size={20} className="shrink-0"/>
+                        <p>{t.desc}</p>
+                    </div>
+
+                    <div className="space-y-4">
+                        {actions.map((action, index) => {
+                            const courseList = action.type === 'add' ? offeredCourses : myCourses;
+                            
+                            return (
+                                <div key={action.id} className="bg-white dark:bg-dark-card p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm relative group transition-all hover:border-primary">
+                                    <div className="flex justify-between items-center mb-4 border-b border-gray-100 dark:border-gray-700 pb-2">
+                                        <h4 className="font-bold text-gray-600 dark:text-gray-300 text-sm">{isAr ? `إجراء رقم ${index + 1}` : `Action #${index + 1}`}</h4>
+                                        {actions.length > 1 && (
+                                            <button onClick={() => handleRemoveAction(action.id)} className="text-red-400 hover:text-red-600 p-1 bg-red-50 hover:bg-red-100 rounded-md transition">
+                                                <Trash2 size={16}/>
+                                            </button>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 mb-1">{t.actionType}</label>
+                                            <select 
+                                                className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none text-sm text-gray-700 dark:text-gray-200"
+                                                value={action.type}
+                                                onChange={(e) => updateAction(action.id, 'type', e.target.value)}
+                                            >
+                                                <option value="" disabled>-- {t.actionType} --</option>
+                                                <option value="drop">{t.types.drop}</option>
+                                                <option value="add">{t.types.add}</option>
+                                                <option value="change">{t.types.change}</option>
+                                            </select>
+                                        </div>
+
+                                        <div className={action.type === 'drop' ? 'md:col-span-2' : 'md:col-span-1'}>
+                                            <label className="block text-xs font-bold text-gray-500 mb-1">{t.selectCourse}</label>
+                                            <select 
+                                                className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none text-sm text-gray-700 dark:text-gray-200 disabled:opacity-50"
+                                                value={action.course}
+                                                onChange={(e) => updateAction(action.id, 'course', e.target.value)}
+                                                disabled={!action.type}
+                                            >
+                                                <option value="" disabled>-- {t.selectCourse} --</option>
+                                                {courseList.map((c, i) => (
+                                                    <option key={i} value={c.code}>{isAr ? c.nameAr : c.nameEn}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {action.type !== 'drop' && (
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 mb-1">{t.sectionNum}</label>
+                                                <input 
+                                                    type="number" 
+                                                    className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none text-sm disabled:opacity-50" 
+                                                    value={action.section}
+                                                    onChange={(e) => updateAction(action.id, 'section', e.target.value)}
+                                                    disabled={!action.type}
+                                                    placeholder="..." 
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {actions.length < 4 && (
+                        <button onClick={handleAddAction} className="w-full py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-500 font-bold hover:border-primary hover:text-primary transition flex items-center justify-center gap-2">
+                            <PlusCircle size={18}/> {t.addMore}
+                        </button>
+                    )}
+
+                    <div className="bg-white dark:bg-dark-card p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t.justification}</label>
+                        <textarea 
+                            className="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none h-24" 
+                            placeholder="..."
+                            value={justification}
+                            onChange={(e) => setJustification(e.target.value)}
+                        ></textarea>
+                    </div>
+
+                    <button 
+                        onClick={() => setSubmitted(true)} 
+                        disabled={!isFormValid}
+                        className={`w-full font-bold py-3.5 rounded-xl transition shadow-lg ${!isFormValid ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' : 'bg-primary text-white hover:bg-teal-700 shadow-primary/20'}`}
+                    >
+                        {t.submit}
+                    </button>
+                </div>
+            );
+        };
+
         // 10. طلبات التسجيل الإلكتروني
         const RegistrationRequestsPage = ({ onBack, lang }) => {
             const isAr = lang === 'ar';
@@ -2154,8 +2396,9 @@
         };
 
         // 11. طلب حركة أكاديمية (جديد)
-        const NewAcademicActionPage = ({ onBack, lang }) => {
+        const NewAcademicActionPage = ({ onBack, lang, user, db, appId }) => {
             const [actionType, setActionType] = useState('');
+            const [justification, setJustification] = useState('');
             const [submitted, setSubmitted] = useState(false);
             const isAr = lang === 'ar';
 
@@ -2223,7 +2466,12 @@
 
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t.justificationLabel}</label>
-                                <textarea className="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none h-32" placeholder={t.justificationPlaceholder}></textarea>
+                                <textarea 
+                                    className="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none h-32" 
+                                    placeholder={t.justificationPlaceholder}
+                                    value={justification}
+                                    onChange={(e) => setJustification(e.target.value)}
+                                ></textarea>
                             </div>
 
                             <div>
@@ -2235,7 +2483,24 @@
                             </div>
 
                             <button 
-                                onClick={() => setSubmitted(true)} 
+                                onClick={async () => {
+                                    if (user && db) {
+                                        try {
+                                            await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'academic_actions'), {
+                                                type: actionType,
+                                                justification: justification,
+                                                status: 'pending',
+                                                date: new Date().toISOString().split('T')[0],
+                                                term: isAr ? 'الفصل الحالي' : 'Current Semester'
+                                            });
+                                            setSubmitted(true);
+                                        } catch (error) {
+                                            console.error("Error adding document: ", error);
+                                        }
+                                    } else {
+                                        setSubmitted(true); // Fallback
+                                    }
+                                }} 
                                 disabled={!actionType}
                                 className={`w-full font-bold py-3 rounded-xl transition shadow-lg ${!actionType ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' : 'bg-primary text-white hover:bg-teal-700 shadow-primary/20'}`}
                             >
@@ -2248,8 +2513,9 @@
         };
 
         // 12. عرض الحركات الأكاديمية (جديد)
-        const ViewAcademicActionsPage = ({ onBack, lang }) => {
+        const ViewAcademicActionsPage = ({ onBack, lang, user, db, appId }) => {
             const isAr = lang === 'ar';
+            const [actions, setActions] = useState([]);
             
             const t = {
                 title: isAr ? "عرض الحركات الأكاديمية" : "View Academic Actions",
@@ -2260,13 +2526,29 @@
                     approved: isAr ? "مقبول" : "Approved",
                     rejected: isAr ? "مرفوض" : "Rejected",
                     pending: isAr ? "قيد الدراسة" : "Pending"
+                },
+                actionTypes: {
+                    apology: isAr ? "اعتذار عن فصل دراسي" : "Semester Apology",
+                    postpone: isAr ? "تأجيل الدراسة" : "Study Postponement",
+                    reenroll: isAr ? "إعادة قيد" : "Re-enrollment",
+                    chance: isAr ? "فرصة إضافية" : "Additional Chance"
                 }
             };
 
-            const actions = [
-                { id: 2055, type: isAr ? 'اعتذار عن فصل' : 'Semester Apology', term: isAr ? 'الفصل الثاني 1444' : '2nd Semester 1444', status: 'approved', date: '2023-01-15' },
-                { id: 1089, type: isAr ? 'تأجيل دراسة' : 'Study Postponement', term: isAr ? 'الفصل الأول 1444' : '1st Semester 1444', status: 'rejected', date: '2022-09-01', note: isAr ? 'تجاوز الحد المسموح للتأجيل' : 'Exceeded postponement limit' },
-            ];
+            useEffect(() => {
+                if (!user || !db) return;
+                const colRef = collection(db, 'artifacts', appId, 'users', user.uid, 'academic_actions');
+                const unsubscribe = onSnapshot(colRef, (snapshot) => {
+                    const loadedActions = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    // Sort descending by date locally
+                    loadedActions.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    setActions(loadedActions);
+                }, (error) => console.error("Error loading actions:", error));
+                return () => unsubscribe();
+            }, [user, db, appId]);
 
             const getStatusBadge = (status) => {
                 const label = t.status[status];
@@ -2286,14 +2568,14 @@
                                 <div key={action.id} className="bg-white dark:bg-dark-card p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                                     <div className="flex justify-between items-start mb-3">
                                         <div>
-                                            <h4 className="font-bold text-gray-800 dark:text-white text-lg">{action.type}</h4>
+                                            <h4 className="font-bold text-gray-800 dark:text-white text-lg">{t.actionTypes[action.type] || action.type}</h4>
                                             <p className="text-sm text-gray-500">{action.term}</p>
                                         </div>
                                         {getStatusBadge(action.status)}
                                     </div>
                                     <div className="border-t border-gray-100 dark:border-gray-700 pt-3 flex flex-col gap-2">
                                         <div className="flex justify-between text-xs text-gray-400">
-                                            <span>{t.reqId} #{action.id}</span>
+                                            <span className="truncate w-32">{t.reqId} #{action.id.substring(0,6)}</span>
                                             <span>{action.date}</span>
                                         </div>
                                         {action.note && <p className="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 p-2 rounded">{t.note} {action.note}</p>}
@@ -2307,8 +2589,10 @@
         };
 
         // 13. طلب تغيير تخصص (جديد)
-        const MajorChangeRequestPage = ({ onBack, lang }) => {
+        const MajorChangeRequestPage = ({ onBack, lang, user, db, appId }) => {
             const [submitted, setSubmitted] = useState(false);
+            const [targetCollege, setTargetCollege] = useState('');
+            const [targetMajor, setTargetMajor] = useState('');
             const isAr = lang === 'ar';
 
             const t = {
@@ -2369,8 +2653,13 @@
                         <div>
                             <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t.targetCollege}</label>
                             <div className="relative">
-                                <select className="w-full p-3 pr-10 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none appearance-none text-gray-700 dark:text-gray-200">
-                                    {t.colleges.map((c, i) => <option key={i}>{c}</option>)}
+                                <select 
+                                    className="w-full p-3 pr-10 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none appearance-none text-gray-700 dark:text-gray-200"
+                                    value={targetCollege}
+                                    onChange={e => setTargetCollege(e.target.value)}
+                                >
+                                    <option value="" disabled>-- {t.targetCollege} --</option>
+                                    {t.colleges.map((c, i) => <option key={i} value={c}>{c}</option>)}
                                 </select>
                                 <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18}/>
                             </div>
@@ -2379,8 +2668,13 @@
                         <div>
                             <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t.targetMajor}</label>
                             <div className="relative">
-                                <select className="w-full p-3 pr-10 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none appearance-none text-gray-700 dark:text-gray-200">
-                                    {t.majors.map((m, i) => <option key={i}>{m}</option>)}
+                                <select 
+                                    className="w-full p-3 pr-10 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none appearance-none text-gray-700 dark:text-gray-200"
+                                    value={targetMajor}
+                                    onChange={e => setTargetMajor(e.target.value)}
+                                >
+                                    <option value="" disabled>-- {t.targetMajor} --</option>
+                                    {t.majors.map((m, i) => <option key={i} value={m}>{m}</option>)}
                                 </select>
                                 <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18}/>
                             </div>
@@ -2390,7 +2684,27 @@
                             {t.note}
                         </div>
 
-                        <button onClick={() => setSubmitted(true)} className="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-teal-700 transition shadow-lg shadow-primary/20">
+                        <button 
+                            onClick={async () => {
+                                if (user && db && targetCollege && targetMajor) {
+                                    try {
+                                        await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'major_changes'), {
+                                            targetCollege,
+                                            targetMajor,
+                                            status: 'pending',
+                                            date: new Date().toISOString().split('T')[0],
+                                        });
+                                        setSubmitted(true);
+                                    } catch (error) {
+                                        console.error("Error", error);
+                                    }
+                                } else {
+                                    setSubmitted(true);
+                                }
+                            }} 
+                            disabled={!targetCollege || !targetMajor}
+                            className={`w-full font-bold py-3 rounded-xl transition shadow-lg ${(!targetCollege || !targetMajor) ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' : 'bg-primary text-white hover:bg-teal-700 shadow-primary/20'}`}
+                        >
                             {t.submit}
                         </button>
                     </div>
@@ -2399,8 +2713,9 @@
         };
 
         // 14. عرض طلبات تغيير التخصص (جديد)
-        const ViewMajorChangeRequestsPage = ({ onBack, lang }) => {
+        const ViewMajorChangeRequestsPage = ({ onBack, lang, user, db, appId }) => {
             const isAr = lang === 'ar';
+            const [requests, setRequests] = useState([]);
             
             const t = {
                 title: isAr ? "طلبات تغيير التخصص" : "Major Change Requests",
@@ -2414,10 +2729,16 @@
                 }
             };
 
-            const requests = [
-                { id: 9901, target: isAr ? 'علوم الحاسب الآلي' : 'Computer Science', date: '2023-05-10', status: 'pending', note: isAr ? 'بانتظار موافقة عميد الكلية' : 'Awaiting Dean approval' },
-                { id: 8820, target: isAr ? 'أمن سيبراني' : 'Cybersecurity', date: '2022-12-01', status: 'rejected', note: isAr ? 'المعدل لا يستوفي الشروط' : 'GPA does not meet requirements' }
-            ];
+            useEffect(() => {
+                if (!user || !db) return;
+                const colRef = collection(db, 'artifacts', appId, 'users', user.uid, 'major_changes');
+                const unsubscribe = onSnapshot(colRef, (snapshot) => {
+                    const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    loaded.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    setRequests(loaded);
+                }, (error) => console.error(error));
+                return () => unsubscribe();
+            }, [user, db, appId]);
 
             const getStatusBadge = (status) => {
                 const label = t.status[status];
@@ -2435,14 +2756,14 @@
                                 <div className="flex justify-between items-start mb-2">
                                     <div>
                                         <div className="text-xs text-gray-400 mb-1">{t.transferTo}</div>
-                                        <h4 className="font-bold text-gray-800 dark:text-white text-lg">{req.target}</h4>
+                                        <h4 className="font-bold text-gray-800 dark:text-white text-lg">{req.targetMajor || req.target}</h4>
                                     </div>
                                     {getStatusBadge(req.status)}
                                 </div>
                                 <div className="border-t border-gray-100 dark:border-gray-700 mt-3 pt-3">
                                     <div className="flex justify-between text-xs text-gray-500 mb-2">
                                         <span>{t.reqDate} {req.date}</span>
-                                        <span>#{req.id}</span>
+                                        <span className="truncate w-24 text-left">#{req.id.substring(0,6)}</span>
                                     </div>
                                     {req.note && <div className="bg-gray-50 dark:bg-gray-800 p-2 rounded text-xs text-gray-600 dark:text-gray-300">{t.statusLabel} {req.note}</div>}
                                 </div>
@@ -2454,11 +2775,12 @@
         };
 
         // --- NEW: حجز ساعات مكتبية ---
-        const OfficeHoursBookPage = ({ onBack, lang }) => {
+        const OfficeHoursBookPage = ({ onBack, lang, user, db, appId }) => {
             const isAr = lang === 'ar';
             const [submitted, setSubmitted] = useState(false);
             const [selectedProf, setSelectedProf] = useState('');
             const [selectedSlot, setSelectedSlot] = useState(null);
+            const [reason, setReason] = useState('');
 
             const t = {
                 title: isAr ? "حجز ساعات مكتبية" : "Book Office Hours",
@@ -2567,11 +2889,36 @@
 
                         <div>
                             <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t.reason}</label>
-                            <textarea className="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none h-24" placeholder="..."></textarea>
+                            <textarea 
+                                className="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none h-24" 
+                                placeholder="..."
+                                value={reason}
+                                onChange={e => setReason(e.target.value)}
+                            ></textarea>
                         </div>
 
                         <button 
-                            onClick={() => setSubmitted(true)} 
+                            onClick={async () => {
+                                if (user && db && selectedProf && selectedSlot) {
+                                    try {
+                                        // Find slot details
+                                        const profData = profs.find(p => p.id === selectedProf);
+                                        const slotData = allSlots[selectedProf].find(s => s.id === selectedSlot);
+                                        
+                                        await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'office_hours'), {
+                                            profName: profData.name,
+                                            courseRole: profData.role,
+                                            date: slotData.date,
+                                            time: slotData.time,
+                                            mode: slotData.mode,
+                                            room: slotData.room || '',
+                                            reason: reason,
+                                            status: 'pending'
+                                        });
+                                        setSubmitted(true);
+                                    } catch (error) { console.error(error); }
+                                } else { setSubmitted(true); }
+                            }} 
                             disabled={!selectedSlot}
                             className={`w-full font-bold py-3 rounded-xl transition shadow-lg ${!selectedSlot ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' : 'bg-primary text-white hover:bg-teal-700 shadow-primary/20'}`}
                         >
@@ -2584,8 +2931,9 @@
         };
 
         // --- NEW: مواعيدي المكتبية (عرض المواعيد) ---
-        const OfficeHoursViewPage = ({ onBack, lang }) => {
+        const OfficeHoursViewPage = ({ onBack, lang, user, db, appId }) => {
             const isAr = lang === 'ar';
+            const [appointments, setAppointments] = useState([]);
             
             const t = {
                 title: isAr ? "مواعيدي المكتبية" : "My Office Hours",
@@ -2601,11 +2949,23 @@
                 }
             };
 
-            const appointments = [
-                { id: 1, prof: isAr ? 'د. خالد الشهري' : 'Dr. Khalid Al-Shehri', course: isAr ? 'أستاذ أمن سيبراني' : 'Instructor - CS320', date: '2024-05-18', time: '09:00 - 10:00', mode: 'online', status: 'confirmed', link: '#' },
-                { id: 2, prof: isAr ? 'أ.د. فهد الزهراني' : 'Prof. Fahad Al-Zahrani', course: isAr ? 'عميد الكلية' : 'Dean', date: '2024-05-22', time: '10:00 - 11:00', mode: 'inPerson', room: 'مكتب العميد', status: 'pending' },
-                { id: 3, prof: isAr ? 'أ. محمد علي' : 'Mr. Mohamed Ali', course: isAr ? 'أستاذ تحليل كيميائي' : 'Instructor - CH202', date: '2024-04-10', time: '11:00 - 12:00', mode: 'inPerson', room: 'معمل 3', status: 'completed' }
-            ];
+            useEffect(() => {
+                if (!user || !db) return;
+                const colRef = collection(db, 'artifacts', appId, 'users', user.uid, 'office_hours');
+                const unsubscribe = onSnapshot(colRef, (snapshot) => {
+                    const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    loaded.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    setAppointments(loaded);
+                }, (error) => console.error(error));
+                return () => unsubscribe();
+            }, [user, db, appId]);
+
+            const handleCancel = async (id) => {
+                if (!user || !db) return;
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'office_hours', id));
+                } catch(e) { console.error(e); }
+            }
 
             const getStatusStyle = (status) => {
                 switch(status) {
@@ -2621,7 +2981,9 @@
                     <HeaderPage title={t.title} onBack={onBack} lang={lang} />
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {appointments.map(appt => (
+                        {appointments.length === 0 ? (
+                             <div className="col-span-1 md:col-span-2 text-center py-10 text-gray-500">{t.empty}</div>
+                        ) : appointments.map(appt => (
                             <div key={appt.id} className={`bg-white dark:bg-dark-card p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col ${appt.status === 'completed' || appt.status === 'canceled' ? 'opacity-70' : ''}`}>
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="flex items-center gap-3">
@@ -2629,8 +2991,8 @@
                                             {appt.mode === 'online' ? <Video size={20}/> : <MapPin size={20}/>}
                                         </div>
                                         <div>
-                                            <h4 className="font-bold text-gray-800 dark:text-white text-base">{appt.prof}</h4>
-                                            <span className="text-xs text-gray-500 font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded mt-1 inline-block">{appt.course}</span>
+                                            <h4 className="font-bold text-gray-800 dark:text-white text-base">{appt.profName || appt.prof}</h4>
+                                            <span className="text-xs text-gray-500 font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded mt-1 inline-block">{appt.courseRole || appt.course}</span>
                                         </div>
                                     </div>
                                     <span className={`text-[10px] font-bold px-2 py-1 rounded border flex items-center gap-1 ${getStatusStyle(appt.status)}`}>
@@ -2658,12 +3020,219 @@
                                     </a>
                                 )}
                                 {(appt.status === 'pending' || appt.status === 'confirmed') && appt.mode !== 'online' && (
-                                    <button className="w-full bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition font-bold py-2.5 rounded-xl text-sm border border-red-100 hover:border-transparent">
+                                    <button 
+                                        onClick={() => handleCancel(appt.id)}
+                                        className="w-full bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition font-bold py-2.5 rounded-xl text-sm border border-red-100 hover:border-transparent"
+                                    >
                                         {t.cancelBtn}
                                     </button>
                                 )}
                             </div>
                         ))}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- NEW: طلب رسالة توصية (Request Recommendation) ---
+        const NewRecommendationPage = ({ onBack, lang, user, db, appId }) => {
+            const isAr = lang === 'ar';
+            const [submitted, setSubmitted] = useState(false);
+            const [selectedProf, setSelectedProf] = useState('');
+            const [purpose, setPurpose] = useState('');
+            const [notes, setNotes] = useState('');
+
+            const t = {
+                title: isAr ? "طلب رسالة توصية" : "Request Recommendation Letter",
+                desc: isAr ? "يمكنك طلب رسالة توصية أكاديمية من أساتذتك لدعم تقديمك على برامج الدراسات العليا أو الوظائف." : "You can request an academic recommendation letter from your professors to support your application for graduate studies or jobs.",
+                selectProf: isAr ? "اختر عضو هيئة التدريس" : "Select Instructor",
+                defaultProf: isAr ? "-- اختر الأستاذ --" : "-- Select Professor --",
+                purposeLabel: isAr ? "الغرض من التوصية" : "Purpose of Recommendation",
+                purposePlaceholder: isAr ? "مثال: التقديم على برنامج الماجستير في جامعة كذا..." : "e.g., Applying for Master's program at...",
+                notesLabel: isAr ? "ملاحظات إضافية (اختياري)" : "Additional Notes (Optional)",
+                notesPlaceholder: isAr ? "اكتب أي تفاصيل تود إضافتها في رسالة التوصية كالمشاريع المميزة التي أنجزتها معه..." : "Write any details you'd like highlighted, like projects you completed...",
+                submit: isAr ? "إرسال الطلب" : "Submit Request",
+                successTitle: isAr ? "تم إرسال الطلب بنجاح" : "Request Submitted Successfully",
+                successDesc: isAr ? "تم توجيه طلبك للدكتور، يمكنك متابعة حالة الطلب وتحميل التوصية من صفحة 'التوصيات الأكاديمية'." : "Your request has been sent to the professor. You can track its status and download the letter from the 'Academic Recommendations' page.",
+                backMenu: isAr ? "عودة للقائمة" : "Back to Menu"
+            };
+
+            const profs = [
+                { id: 'p1', name: isAr ? 'د. أحمد سالم' : 'Dr. Ahmed Salem', role: isAr ? 'أستاذ مقرر الإحصاء الهندسي' : 'Instructor - MATH101' },
+                { id: 'p2', name: isAr ? 'د. خالد الشهري' : 'Dr. Khalid Al-Shehri', role: isAr ? 'أستاذ مقرر أمن سيبراني' : 'Instructor - CS320' },
+                { id: 'p3', name: isAr ? 'أ. محمد علي' : 'Mr. Mohamed Ali', role: isAr ? 'أستاذ مقرر تحليل كيميائي' : 'Instructor - CH202' },
+                { id: 'p4', name: isAr ? 'أ.د. فهد الزهراني' : 'Prof. Fahad Al-Zahrani', role: isAr ? 'عميد كلية الحاسب الآلي' : 'Dean of Computer College' }
+            ];
+
+            if(submitted) {
+                return (
+                    <div className="animate-fade-in text-center py-20">
+                        <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6"><CheckCircle2 size={40}/></div>
+                        <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">{t.successTitle}</h3>
+                        <p className="text-gray-500 mb-6 px-4">{t.successDesc}</p>
+                        <button onClick={onBack} className="bg-gray-100 text-gray-700 px-6 py-2 rounded-lg font-bold hover:bg-gray-200 transition">{t.backMenu}</button>
+                    </div>
+                )
+            }
+
+            return (
+                <div className="animate-fade-in space-y-6">
+                    <HeaderPage title={t.title} onBack={onBack} lang={lang} />
+                    
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 p-4 rounded-xl flex gap-3 text-blue-800 dark:text-blue-200 text-sm">
+                        <FileSignature size={20} className="shrink-0"/>
+                        <p>{t.desc}</p>
+                    </div>
+
+                    <div className="bg-white dark:bg-dark-card p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm space-y-5">
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t.selectProf}</label>
+                            <div className="relative">
+                                <select 
+                                    className="w-full p-3 pr-10 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none appearance-none text-gray-700 dark:text-gray-200"
+                                    value={selectedProf}
+                                    onChange={(e) => setSelectedProf(e.target.value)}
+                                >
+                                    <option value="" disabled>{t.defaultProf}</option>
+                                    {profs.map(p => (
+                                        <option key={p.id} value={p.id}>{p.name} ({p.role})</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18}/>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t.purposeLabel}</label>
+                            <input 
+                                type="text" 
+                                className="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none text-gray-700 dark:text-gray-200" 
+                                placeholder={t.purposePlaceholder}
+                                value={purpose}
+                                onChange={(e) => setPurpose(e.target.value)}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t.notesLabel}</label>
+                            <textarea 
+                                className="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none h-28 text-gray-700 dark:text-gray-200" 
+                                placeholder={t.notesPlaceholder}
+                                value={notes}
+                                onChange={e => setNotes(e.target.value)}
+                            ></textarea>
+                        </div>
+
+                        <button 
+                            onClick={async () => {
+                                if(user && db && selectedProf && purpose) {
+                                    try {
+                                        const profData = profs.find(p => p.id === selectedProf);
+                                        await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'recommendations'), {
+                                            profName: profData.name,
+                                            profRole: profData.role,
+                                            purpose: purpose,
+                                            notes: notes,
+                                            date: new Date().toISOString().split('T')[0],
+                                            status: 'pending'
+                                        });
+                                        setSubmitted(true);
+                                    } catch(e) { console.error(e); }
+                                } else { setSubmitted(true); }
+                            }} 
+                            disabled={!selectedProf || !purpose}
+                            className={`w-full font-bold py-3 rounded-xl transition shadow-lg ${(!selectedProf || !purpose) ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' : 'bg-primary text-white hover:bg-teal-700 shadow-primary/20'}`}
+                        >
+                            {t.submit}
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- NEW: عرض التوصيات الأكاديمية (View Recommendations) ---
+        const ViewRecommendationsPage = ({ onBack, lang, user, db, appId }) => {
+            const isAr = lang === 'ar';
+            const [recommendations, setRecommendations] = useState([]);
+            
+            const t = {
+                title: isAr ? "التوصيات الأكاديمية" : "Academic Recommendations",
+                empty: isAr ? "لا توجد طلبات توصية مسجلة" : "No recommendation requests found",
+                prof: isAr ? "مقدم التوصية:" : "Professor:",
+                purpose: isAr ? "الغرض:" : "Purpose:",
+                download: isAr ? "تحميل التوصية (PDF)" : "Download PDF",
+                reqDate: isAr ? "تاريخ الطلب:" : "Req Date:",
+                status: {
+                    approved: isAr ? "مكتملة ومتاحة للتحميل" : "Completed & Available",
+                    pending: isAr ? "بانتظار رد الدكتور" : "Awaiting Professor",
+                    rejected: isAr ? "مرفوضة" : "Rejected"
+                }
+            };
+
+            useEffect(() => {
+                if (!user || !db) return;
+                const colRef = collection(db, 'artifacts', appId, 'users', user.uid, 'recommendations');
+                const unsubscribe = onSnapshot(colRef, (snapshot) => {
+                    const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    loaded.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    setRecommendations(loaded);
+                }, (error) => console.error(error));
+                return () => unsubscribe();
+            }, [user, db, appId]);
+
+            const getStatusStyle = (status) => {
+                switch(status) {
+                    case 'approved': return 'bg-green-100 text-green-700 border-green-200';
+                    case 'rejected': return 'bg-red-100 text-red-700 border-red-200';
+                    default: return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+                }
+            };
+
+            return (
+                <div className="animate-fade-in space-y-6">
+                    <HeaderPage title={t.title} onBack={onBack} lang={lang} />
+                    
+                    <div className="space-y-4">
+                        {recommendations.length === 0 ? (
+                            <div className="text-center py-10 text-gray-500">{t.empty}</div>
+                        ) : (
+                            recommendations.map(rec => (
+                                <div key={rec.id} className="bg-white dark:bg-dark-card p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-3 bg-gray-50 dark:bg-gray-800 text-primary rounded-xl border border-gray-100 dark:border-gray-700">
+                                                <FileSignature size={24}/>
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-gray-800 dark:text-white text-base">{rec.profName || rec.prof}</h4>
+                                                <span className="text-xs text-gray-500 font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded mt-1 inline-block">{rec.profRole || rec.role}</span>
+                                            </div>
+                                        </div>
+                                        <span className={`text-[10px] font-bold px-2 py-1 rounded border flex items-center gap-1 ${getStatusStyle(rec.status)}`}>
+                                            {rec.status === 'approved' ? <CheckCircle2 size={12}/> : (rec.status === 'pending' ? <Clock size={12}/> : <X size={12}/>)}
+                                            {t.status[rec.status]}
+                                        </span>
+                                    </div>
+                                    
+                                    <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col gap-2 mb-4 flex-1">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-500">{t.purpose}</span>
+                                            <span className="font-bold text-gray-800 dark:text-white">{rec.purpose}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-500">{t.reqDate}</span>
+                                            <span className="font-mono text-gray-600 dark:text-gray-300">{rec.date}</span>
+                                        </div>
+                                    </div>
+
+                                    {rec.status === 'approved' && (
+                                        <button className="w-full bg-primary/10 text-primary hover:bg-primary hover:text-white transition font-bold py-2.5 rounded-xl text-sm flex justify-center items-center gap-2 border border-primary/20 hover:border-transparent">
+                                            <Download size={18}/> {t.download}
+                                        </button>
+                                    )}
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             );
@@ -2851,11 +3420,25 @@
             );
         };
         // 18. الملف الشخصي (محدث ليشمل كافة الأقسام الجديدة)
-        const PersonalPage = ({ onBack, activeView, lang }) => {
+        const PersonalPage = ({ onBack, activeView, lang, user, db, appId }) => {
             const isAr = lang === 'ar';
             const [imgSrc, setImgSrc] = useState(null);
             const [toast, setToast] = useState(null);
             const fileInputRef = useRef(null);
+
+            // Fetch Profile Photo from Firestore
+            useEffect(() => {
+                if (!user || !db) return;
+                const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'info');
+                const unsubscribe = onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists() && docSnap.data().photoURL) {
+                        setImgSrc(docSnap.data().photoURL);
+                    } else {
+                        setImgSrc(null);
+                    }
+                }, (error) => console.error(error));
+                return () => unsubscribe();
+            }, [user, db, appId]);
 
             const t = {
                 titles: {
@@ -2932,11 +3515,36 @@
             const handleFileChange = (e) => {
                 const file = e.target.files[0];
                 if (file) {
-                    const url = URL.createObjectURL(file);
-                    setImgSrc(url);
-                    setToast({ type: 'success', message: t.photo.success });
-                    setTimeout(() => setToast(null), 3000);
+                    const reader = new FileReader();
+                    reader.onloadend = async () => {
+                        const base64String = reader.result;
+                        setImgSrc(base64String); // Show locally fast
+                        
+                        if (user && db) {
+                            try {
+                                const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'info');
+                                await setDoc(docRef, { photoURL: base64String }, { merge: true });
+                                setToast({ type: 'success', message: t.photo.success });
+                            } catch (error) {
+                                console.error("Error saving photo", error);
+                            }
+                        } else {
+                            setToast({ type: 'success', message: t.photo.success });
+                        }
+                        setTimeout(() => setToast(null), 3000);
+                    };
+                    reader.readAsDataURL(file); // Compress handling omitted for simplicity in demo
                 }
+            };
+
+            const handleDeletePhoto = async () => {
+                setImgSrc(null);
+                if (user && db) {
+                    const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'info');
+                    await setDoc(docRef, { photoURL: null }, { merge: true });
+                }
+                setToast({type:'error', message:t.photo.deleted}); 
+                setTimeout(()=>setToast(null),3000);
             };
 
             const translateMonth = (txt) => {
@@ -2999,7 +3607,7 @@
                             </p>
                             <div className="mt-8 flex justify-center gap-3">
                                 <button onClick={() => fileInputRef.current.click()} className="px-6 py-2.5 bg-primary text-white rounded-xl font-bold hover:bg-teal-700 transition flex items-center gap-2 shadow-lg shadow-primary/20"><Upload size={18}/> {t.photo.choose}</button>
-                                {imgSrc && <button onClick={() => {setImgSrc(null); setToast({type:'error', message:t.photo.deleted}); setTimeout(()=>setToast(null),3000)}} className="px-6 py-2.5 bg-red-50 text-red-600 rounded-xl font-bold hover:bg-red-100 transition">{t.photo.delete}</button>}
+                                {imgSrc && <button onClick={handleDeletePhoto} className="px-6 py-2.5 bg-red-50 text-red-600 rounded-xl font-bold hover:bg-red-100 transition">{t.photo.delete}</button>}
                             </div>
                         </div>
                     )}
@@ -3351,7 +3959,7 @@
                         </div>
 
                         <div className="bg-white dark:bg-dark-card rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col h-full min-h-[250px]">
-                            <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50"><h3 className="font-bold text-primary flex items-center gap-2 text-sm"><Clock size={16}/> {t.todaysLectures}</h3><span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded font-bold">3</span></div>
+                            <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50"><h3 className="font-bold text-primary flex items-center gap-2 text-sm"><Clock size={16}/> {t.todaysLectures}</h3><div className="flex items-center gap-2"><span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded font-bold">3</span><button onClick={() => openService('schedule')} className="text-xs text-primary font-bold hover:bg-primary/10 px-2 py-1 rounded transition">{t['view-all']}</button></div></div>
                             <div className="p-4 space-y-4 flex-1 overflow-y-auto">
                                 <div className="flex gap-4 opacity-50"><div className="flex flex-col items-center"><div className="w-3 h-3 rounded-full bg-gray-300"></div><div className="w-0.5 h-full bg-gray-200 my-1"></div></div><div><h4 className="font-bold text-gray-500 text-sm line-through">{isAr ? "إحصاء هندسي" : "Engineering Statistics"}</h4><p className="text-xs text-gray-400">08:00 - 09:50</p></div></div>
                                 <div className="flex gap-4"><div className="flex flex-col items-center"><div className="w-3 h-3 rounded-full bg-primary ring-4 ring-teal-100 animate-pulse"></div><div className="w-0.5 h-full bg-gray-200 my-1"></div></div><div className="bg-teal-50 p-3 rounded-lg border border-teal-100 w-full"><h4 className="font-bold text-primary text-sm">{isAr ? "تحليل كيميائي" : "Chemical Analysis"}</h4><p className="text-xs text-gray-600 mt-1">{isAr ? "معمل 3" : "Lab 3"} • {t.now}</p></div></div>
@@ -3362,7 +3970,7 @@
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className="bg-white dark:bg-dark-card p-5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
-                            <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-gray-800 dark:text-white flex items-center gap-2"><span className="w-1 h-5 bg-primary rounded-full"></span>{t.upcomingExams}</h3><button className="text-xs text-primary font-bold hover:bg-primary/5 px-2 py-1 rounded">{t['view-all']}</button></div>
+                            <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-gray-800 dark:text-white flex items-center gap-2"><span className="w-1 h-5 bg-primary rounded-full"></span>{t.upcomingExams}</h3><button onClick={() => openService('exams')} className="text-xs text-primary font-bold hover:bg-primary/5 px-2 py-1 rounded transition">{t['view-all']}</button></div>
                             <div className="space-y-3">
                                 {upcomingExams.map((exam, i) => (
                                     <div key={i} className="flex gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 relative overflow-hidden">
@@ -3376,7 +3984,7 @@
                         </div>
 
                         <div className="bg-white dark:bg-dark-card p-5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
-                            <h3 className="font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2"><span className="w-1 h-5 bg-primary rounded-full"></span>{t.attendance}</h3>
+                            <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-gray-800 dark:text-white flex items-center gap-2"><span className="w-1 h-5 bg-primary rounded-full"></span>{t.attendance}</h3><button onClick={() => openService('absences')} className="text-xs text-primary font-bold hover:bg-primary/5 px-2 py-1 rounded transition">{t['view-all']}</button></div>
                              <div className="space-y-6">
                                 {attendanceData.map((item, idx) => {
                                     const progressPercent = Math.min((item.absencePct / 25) * 100, 100);
@@ -3426,6 +4034,33 @@
             const [menuOpen, setMenuOpen] = useState(false);
             const [zoomLevel, setZoomLevel] = useState(100);
             const [isReaderActive, setIsReaderActive] = useState(false);
+            const [settingsOpen, setSettingsOpen] = useState(false);
+            
+            // --- New Accessibility States ---
+            const [reduceMotion, setReduceMotion] = useState(false);
+            const [highlightLinks, setHighlightLinks] = useState(false);
+
+            // --- Firebase Auth State ---
+            const [user, setUser] = useState(null);
+
+            useEffect(() => {
+                if (!auth) return;
+                const initAuth = async () => {
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (error) {
+                        console.error("Auth init error:", error);
+                    }
+                };
+                initAuth();
+                const unsubscribe = onAuthStateChanged(auth, setUser);
+                return () => unsubscribe();
+            }, []);
+            // ---------------------------
 
             useEffect(() => { document.documentElement.classList.toggle('dark', darkMode); }, [darkMode]);
             // IMPORTANT: Ensure correct directory switching
@@ -3433,29 +4068,50 @@
             // Apply global font scaling
             useEffect(() => { document.documentElement.style.fontSize = `${zoomLevel}%`; }, [zoomLevel]);
 
-            // Auto-reader logic: runs on view change, lang change, or toggle
+            // Apply Reduce Motion
             useEffect(() => {
-                if (isReaderActive) {
-                    window.speechSynthesis.cancel(); // Stop any current speech
-                    // Use a short delay to allow React to render the new view into the DOM
-                    const timer = setTimeout(() => {
-                        const contentElement = document.getElementById('main-content');
-                        if (!contentElement) return;
-                        
-                        const content = contentElement.innerText;
-                        if (!content.trim()) return;
+                if (reduceMotion) document.documentElement.classList.add('reduce-motion');
+                else document.documentElement.classList.remove('reduce-motion');
+            }, [reduceMotion]);
 
-                        const utterance = new SpeechSynthesisUtterance(content);
+            // Apply Highlight Links
+            useEffect(() => {
+                if (highlightLinks) document.documentElement.classList.add('highlight-links');
+                else document.documentElement.classList.remove('highlight-links');
+            }, [highlightLinks]);
+
+            // Click-to-read logic (القارئ الصوتي عند الضغط على النصوص)
+            useEffect(() => {
+                const handleScreenClick = (e) => {
+                    if (!isReaderActive) return;
+                    
+                    // إيقاف أي قراءة سابقة
+                    window.speechSynthesis.cancel(); 
+                    
+                    // جلب النص الخاص بالعنصر الذي تم الضغط عليه تحديداً
+                    const textToRead = e.target.innerText || e.target.textContent;
+                    
+                    if (textToRead && textToRead.trim() !== '') {
+                        const utterance = new SpeechSynthesisUtterance(textToRead.trim());
                         utterance.lang = lang === 'ar' ? 'ar-SA' : 'en-US';
                         utterance.rate = 0.9; // سرعة قراءة مناسبة للوضوح
                         
                         window.speechSynthesis.speak(utterance);
-                    }, 500);
-                    return () => clearTimeout(timer);
+                    }
+                };
+
+                if (isReaderActive) {
+                    // تفعيل مراقب الضغطات على مستوى الصفحة
+                    document.addEventListener('click', handleScreenClick);
                 } else {
+                    // إيقاف القراءة تماماً عند إغلاق الميزة
                     window.speechSynthesis.cancel();
                 }
-            }, [view, lang, isReaderActive]);
+
+                return () => {
+                    document.removeEventListener('click', handleScreenClick);
+                };
+            }, [isReaderActive, lang]);
 
             const toggleSpeech = () => {
                 setIsReaderActive(!isReaderActive);
@@ -3489,6 +4145,7 @@
                         { id: 'dept-add' },
                         { id: 'dept-change' },
                         { id: 'dept-drop' },
+                        { id: 'dept-multi' }, // NEW ITEM HERE
                         { id: 'reg-requests' },
                         { id: 'withdraw' }
                     ]
@@ -3500,6 +4157,8 @@
                         { id: 'academic-action-view' },
                         { id: 'major-change-new' },
                         { id: 'major-change-view' },
+                        { id: 'recommendation-new' }, // NEW ITEM
+                        { id: 'recommendation-view' }, // NEW ITEM
                         { id: 'office-hours-book' },
                         { id: 'office-hours-view' }
                     ]
@@ -3532,13 +4191,14 @@
                     case 'schedule': return <SchedulePage onBack={goHome} t={t} lang={lang} />;
                     case 'plan': return <PlanPage onBack={goHome} t={t} lang={lang} />;
                     case 'results': return <ResultsPage onBack={goHome} t={t} lang={lang} onOpenNotifications={openNotifications} />;
-                    case 'addDrop': return <AddDropPage onBack={goHome} t={t} lang={lang} />;
+                    case 'addDrop': return <AddDropPage onBack={goHome} t={t} lang={lang} user={user} db={db} appId={appId} />;
                     
                     // Registration Views
                     case 'offered-courses': return <OfferedCoursesPage onBack={goHome} lang={lang} />;
                     case 'dept-add': return <DepartmentRequestPage onBack={goHome} type="add" lang={lang} />;
                     case 'dept-change': return <DepartmentRequestPage onBack={goHome} type="change" lang={lang} />;
                     case 'dept-drop': return <DepartmentRequestPage onBack={goHome} type="drop" lang={lang} />;
+                    case 'dept-multi': return <MultiRequestPage onBack={goHome} lang={lang} />; // NEW ROUTE
                     case 'reg-requests': return <RegistrationRequestsPage onBack={goHome} lang={lang} />;
                     case 'withdraw': return <WithdrawPage onBack={goHome} lang={lang} />;
 
@@ -3549,21 +4209,23 @@
                     case 'record': return <AcademicRecordPage onBack={goHome} lang={lang} t={t} onOpenNotifications={openNotifications} />; 
                     
                     // Requests Views
-                    case 'academic-action-new': return <NewAcademicActionPage onBack={goHome} lang={lang} />;
-                    case 'academic-action-view': return <ViewAcademicActionsPage onBack={goHome} lang={lang} />;
-                    case 'major-change-new': return <MajorChangeRequestPage onBack={goHome} lang={lang} />;
-                    case 'major-change-view': return <ViewMajorChangeRequestsPage onBack={goHome} lang={lang} />;
-                    case 'office-hours-book': return <OfficeHoursBookPage onBack={goHome} lang={lang} />;
-                    case 'office-hours-view': return <OfficeHoursViewPage onBack={goHome} lang={lang} />;
+                    case 'academic-action-new': return <NewAcademicActionPage onBack={goHome} lang={lang} user={user} db={db} appId={appId} />;
+                    case 'academic-action-view': return <ViewAcademicActionsPage onBack={goHome} lang={lang} user={user} db={db} appId={appId} />;
+                    case 'major-change-new': return <MajorChangeRequestPage onBack={goHome} lang={lang} user={user} db={db} appId={appId} />;
+                    case 'major-change-view': return <ViewMajorChangeRequestsPage onBack={goHome} lang={lang} user={user} db={db} appId={appId} />;
+                    case 'recommendation-new': return <NewRecommendationPage onBack={goHome} lang={lang} user={user} db={db} appId={appId} />; // NEW ROUTE
+                    case 'recommendation-view': return <ViewRecommendationsPage onBack={goHome} lang={lang} user={user} db={db} appId={appId} />; // NEW ROUTE
+                    case 'office-hours-book': return <OfficeHoursBookPage onBack={goHome} lang={lang} user={user} db={db} appId={appId} />;
+                    case 'office-hours-view': return <OfficeHoursViewPage onBack={goHome} lang={lang} user={user} db={db} appId={appId} />;
 
                     // Personal Views
-                    case 'id-photo': return <PersonalPage onBack={goHome} activeView="id-photo" lang={lang} />;
-                    case 'finance': return <PersonalPage onBack={goHome} activeView="finance" lang={lang} />;
-                    case 'rewards': return <PersonalPage onBack={goHome} activeView="rewards" lang={lang} />;
-                    case 'penalties': return <PersonalPage onBack={goHome} activeView="penalties" lang={lang} />;
-                    case 'allowances': return <PersonalPage onBack={goHome} activeView="allowances" lang={lang} />;
-                    case 'docs': return <PersonalPage onBack={goHome} activeView="docs" lang={lang} />;
-                    case 'profile': return <PersonalPage onBack={goHome} activeView="id-photo" lang={lang} />; // Fallback
+                    case 'id-photo': return <PersonalPage onBack={goHome} activeView="id-photo" lang={lang} user={user} db={db} appId={appId} />;
+                    case 'finance': return <PersonalPage onBack={goHome} activeView="finance" lang={lang} user={user} db={db} appId={appId} />;
+                    case 'rewards': return <PersonalPage onBack={goHome} activeView="rewards" lang={lang} user={user} db={db} appId={appId} />;
+                    case 'penalties': return <PersonalPage onBack={goHome} activeView="penalties" lang={lang} user={user} db={db} appId={appId} />;
+                    case 'allowances': return <PersonalPage onBack={goHome} activeView="allowances" lang={lang} user={user} db={db} appId={appId} />;
+                    case 'docs': return <PersonalPage onBack={goHome} activeView="docs" lang={lang} user={user} db={db} appId={appId} />;
+                    case 'profile': return <PersonalPage onBack={goHome} activeView="id-photo" lang={lang} user={user} db={db} appId={appId} />; // Fallback
                     
                     // NEW: User Account View
                     case 'user-account': return <UserAccountPage onBack={goHome} lang={lang} />;
@@ -3646,43 +4308,75 @@
                         <header className="bg-white/80 dark:bg-dark-card/80 backdrop-blur-md sticky top-0 z-30 border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex justify-between items-center shadow-sm">
                             <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden p-2 hover:bg-gray-100 rounded-lg"><Menu size={24} className="text-gray-600"/></button>
                             <h2 className="text-xl font-bold text-gray-800 dark:text-white">{t[view] || t.dashboard}</h2>
-                            <div className="flex gap-1 sm:gap-3 items-center">
-                                <div className="flex items-center gap-1">
+                            <div className="flex gap-2 sm:gap-3 items-center relative">
+                                <NotificationBell onClick={openNotifications} /> 
+                                
+                                <div className="relative">
                                     <button 
-                                        onClick={toggleSpeech} 
-                                        className={`rounded-full text-xs sm:text-sm font-bold w-8 h-8 sm:w-10 sm:h-10 transition-all shadow-sm flex items-center justify-center ${isReaderActive ? 'bg-primary text-white hover:bg-teal-700 ring-2 ring-primary/30 shadow-md' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600'}`}
-                                        title={isAr ? (isReaderActive ? "إيقاف القارئ التلقائي" : "تشغيل القارئ التلقائي") : (isReaderActive ? "Stop Auto-Reader" : "Start Auto-Reader")}
+                                        onClick={() => setSettingsOpen(!settingsOpen)}
+                                        className={`p-2 rounded-lg transition-all shadow-sm flex items-center justify-center gap-1.5 ${settingsOpen || reduceMotion || highlightLinks || isReaderActive ? 'bg-primary text-white shadow-primary/20' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                                        title={isAr ? "إمكانية الوصول" : "Accessibility"}
                                     >
-                                        {isReaderActive ? <Volume2 size={18} className="sm:w-5 sm:h-5 animate-pulse"/> : <VolumeX size={18} className="sm:w-5 sm:h-5"/>}
+                                        <Accessibility size={20} className={settingsOpen ? "scale-110 transition-transform" : "transition-transform"} />
                                     </button>
-                                    <button 
-                                        onClick={() => setZoomLevel(prev => Math.min(prev + 10, 130))} 
-                                        className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-full text-xs sm:text-sm font-bold w-8 h-8 sm:w-10 sm:h-10 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors shadow-sm flex items-center justify-center"
-                                        title={isAr ? "تكبير الخط" : "Increase Font Size"}
-                                    >
-                                        A+
-                                    </button>
-                                    <button 
-                                        onClick={() => setZoomLevel(prev => Math.max(prev - 10, 80))} 
-                                        className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-full text-xs sm:text-sm font-bold w-8 h-8 sm:w-10 sm:h-10 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors shadow-sm flex items-center justify-center"
-                                        title={isAr ? "تصغير الخط" : "Decrease Font Size"}
-                                    >
-                                        A-
-                                    </button>
+
+                                    {settingsOpen && (
+                                        <>
+                                            <div className="fixed inset-0 z-40" onClick={() => setSettingsOpen(false)}></div>
+                                            <div className={`absolute top-full mt-3 ${isAr ? 'left-0' : 'right-0'} w-72 bg-white dark:bg-dark-card rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 z-50 p-5 animate-fade-in`}>
+                                                <h4 className="text-sm font-bold text-gray-800 dark:text-white mb-4 border-b border-gray-100 dark:border-gray-700 pb-3 flex items-center gap-2">
+                                                    <Accessibility size={18} className="text-primary"/>
+                                                    {isAr ? 'إمكانية الوصول' : 'Accessibility'}
+                                                </h4>
+                                                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+                                                    {/* Language */}
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-xs font-bold text-gray-600 dark:text-gray-300">{isAr ? 'اللغة' : 'Language'}</span>
+                                                        <button onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')} className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs font-bold text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm border border-gray-200 dark:border-gray-600">
+                                                            {lang === 'ar' ? 'English' : 'العربية'}
+                                                        </button>
+                                                    </div>
+                                                    {/* Dark Mode */}
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-xs font-bold text-gray-600 dark:text-gray-300">{isAr ? 'المظهر' : 'Theme'}</span>
+                                                        <button onClick={() => setDarkMode(!darkMode)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-yellow-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm border border-gray-200 dark:border-gray-600">
+                                                            {darkMode ? <Sun size={16}/> : <Moon size={16} className="text-gray-600 dark:text-gray-300"/>}
+                                                        </button>
+                                                    </div>
+                                                    {/* Font Size */}
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-xs font-bold text-gray-600 dark:text-gray-300">{isAr ? 'حجم الخط' : 'Font Size'} ({zoomLevel}%)</span>
+                                                        <div className="flex gap-1.5">
+                                                            <button onClick={() => setZoomLevel(prev => Math.min(prev + 10, 130))} className="p-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs font-bold w-8 h-8 flex items-center justify-center text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm border border-gray-200 dark:border-gray-600">A+</button>
+                                                            <button onClick={() => setZoomLevel(prev => Math.max(prev - 10, 80))} className="p-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs font-bold w-8 h-8 flex items-center justify-center text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm border border-gray-200 dark:border-gray-600">A-</button>
+                                                        </div>
+                                                    </div>
+                                                    {/* Screen Reader */}
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-xs font-bold text-gray-600 dark:text-gray-300">{isAr ? 'القارئ الصوتي' : 'Screen Reader'}</span>
+                                                        <button onClick={toggleSpeech} className={`p-2 rounded-lg transition-all shadow-sm border ${isReaderActive ? 'bg-primary text-white border-primary' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
+                                                            {isReaderActive ? <Volume2 size={16} className="animate-pulse"/> : <VolumeX size={16}/>}
+                                                        </button>
+                                                    </div>
+                                                    {/* Highlight Links */}
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-xs font-bold text-gray-600 dark:text-gray-300">{isAr ? 'تمييز الأزرار والروابط' : 'Highlight Links'}</span>
+                                                        <button onClick={() => setHighlightLinks(!highlightLinks)} className={`p-2 rounded-lg transition-all shadow-sm border ${highlightLinks ? 'bg-primary text-white border-primary' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
+                                                            <MousePointerClick size={16}/>
+                                                        </button>
+                                                    </div>
+                                                    {/* Reduce Motion */}
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-xs font-bold text-gray-600 dark:text-gray-300">{isAr ? 'إيقاف الحركات' : 'Reduce Motion'}</span>
+                                                        <button onClick={() => setReduceMotion(!reduceMotion)} className={`p-2 rounded-lg transition-all shadow-sm border ${reduceMotion ? 'bg-primary text-white border-primary' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
+                                                            <Activity size={16}/>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
-                                <NotificationBell onClick={openNotifications} /> {/* Updated Main Header Bell */}
-                                <button 
-                                    onClick={() => setLang(lang === 'ar'?'en':'ar')} 
-                                    className="p-1 sm:p-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-full text-[10px] sm:text-xs font-bold w-8 h-8 sm:w-10 sm:h-10 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors shadow-sm flex items-center justify-center"
-                                >
-                                    EN/ع
-                                </button>
-                                <button 
-                                    onClick={() => setDarkMode(!darkMode)} 
-                                    className="p-1 sm:p-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-yellow-400 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors shadow-sm w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center"
-                                >
-                                    {darkMode ? <Sun size={18} className="sm:w-5 sm:h-5"/> : <Moon size={18} className="sm:w-5 sm:h-5"/>}
-                                </button>
                             </div>
                         </header>
                         <div id="main-content" className="p-6 max-w-7xl mx-auto">{renderContent()}</div>
@@ -3696,3 +4390,5 @@
         const root = createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
+</body>
+</html>
