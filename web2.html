@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>بوابتي الأكاديمية - جامعة أم القرى</title>
     
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -31,9 +32,11 @@
         .dark ::-webkit-scrollbar-thumb { background: #475569; }
         .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Chatbot Animations */
         .chat-enter { animation: slideUp 0.3s ease-out forwards; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         
+        /* Accessibility Styles */
         .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after {
             animation-duration: 0.01ms !important;
             animation-iteration-count: 1 !important;
@@ -44,17 +47,18 @@
             outline: 2px solid #006771 !important;
             outline-offset: 2px !important;
         }
+        .dark .highlight-links button, .dark .highlight-links a, .dark .highlight-links select, .dark .highlight-links input {
+            outline-color: #008c99 !important;
+        }
     </style>
 
+    <!-- Import Map for Stable Loading -->
     <script type="importmap">
     {
       "imports": {
         "react": "https://esm.sh/react@18.2.0",
         "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-        "lucide-react": "https://esm.sh/lucide-react@0.292.0",
-        "firebase/app": "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js",
-        "firebase/auth": "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js",
-        "firebase/database": "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js"
+        "lucide-react": "https://esm.sh/lucide-react@0.292.0"
       }
     }
     </script>
@@ -64,7 +68,7 @@
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
-        import React, { useState, useEffect, useRef, createContext, useContext } from 'react';
+        import React, { useState, useEffect, useRef } from 'react';
         import { createRoot } from 'react-dom/client';
         import { 
             LayoutDashboard, GraduationCap, CheckCircle2, FileText, User, 
@@ -79,153 +83,80 @@
             Activity, MousePointerClick
         } from 'lucide-react';
 
-        import { initializeApp } from 'firebase/app';
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
-        import { getDatabase, ref, onValue, set } from 'firebase/database';
+        // --- FIREBASE REALTIME DATABASE SETUP ---
+        const DB_BASE_URL = "https://yahya-b3b2c-default-rtdb.firebaseio.com";
 
-        const baseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "AIzaSyDummyKeyForLocalTesting12345", projectId: "demo-project" };
-        const firebaseConfig = {
-            ...baseConfig,
-            databaseURL: "https://yahya-b3b2c-default-rtdb.firebaseio.com/"
-        };
-        
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getDatabase(app);
-
-        const initialDatabaseState = {
-            studentData: {
-                nameAr: "فيصل عبدالله الخالد", nameEn: "Faisal Abdullah Al-Khalid",
-                id: "444002548", email: "s444002548@st.uqu.edu.sa",
-                collegeAr: "الحاسب الآلي ونظم المعلومات", collegeEn: "Computer & Information Systems",
-                deptAr: "هندسة البرمجيات", deptEn: "Software Engineering",
-                majorAr: "هندسة البرمجيات", majorEn: "Software Engineering",
-                gpa: 3.35, completedHours: 40, currentHours: 18, totalHours: 120,
-                typeAr: "انتظام", typeEn: "Regular",
-                degreeAr: "بكالوريوس", degreeEn: "Bachelor",
-                advisorAr: "د. محمد الغامدي", advisorEn: "Dr. Mohammed Al-Ghamdi", advisorEmail: "advisor@uqu.edu.sa",
-                warnings: 0
-            },
-            notifications: [
-                { id: 1, type: 'alert', titleAr: "تنبيه هام: درجة غير مرصودة", titleEn: "Important: Unrecorded Grade", bodyAr: "لم يتم رصد درجة مقرر (نظم تشغيل) للفصل السابق.", bodyEn: "Grade for OS course not recorded.", timeAr: "الآن", timeEn: "Now", read: false },
-                { id: 2, type: 'info', titleAr: "تذكير: موعد التسجيل", titleEn: "Reminder: Registration", bodyAr: "يبدأ التسجيل للفصل القادم يوم الأحد.", bodyEn: "Registration starts on Sunday.", timeAr: "2 س", timeEn: "2 h", read: false }
-            ],
-            gpaData: [
-                { semAr: 'المستوى 1', semEn: 'Level 1', gpa: 3.85 },
-                { semAr: 'المستوى 2', semEn: 'Level 2', gpa: 3.60 },
-                { semAr: 'المستوى 3', semEn: 'Level 3', gpa: 3.45 },
-                { semAr: 'المستوى 4', semEn: 'Level 4', gpa: 3.35 }
-            ],
-            attendanceStats: [
-                { code: 'SE301', nameAr: 'هندسة برمجيات', nameEn: 'Software Engineering', pct: 98, absent: 1, total: 45, excused: false },
-                { code: 'CS305', nameAr: 'نظم تشغيل', nameEn: 'Operating Systems', pct: 91, absent: 4, total: 45, excused: false },
-                { code: 'MATH201', nameAr: 'إحصاء هندسي', nameEn: 'Engineering Statistics', pct: 85, absent: 6, total: 40, excused: true },
-                { code: 'PHYS101', nameAr: 'فيزياء عامة', nameEn: 'General Physics', pct: 75, absent: 12, total: 48, excused: false }, 
-            ],
-            events: [
-                { id: 1, type: 'assignment', course: 'CS101', titleAr: 'واجب 1: الخوارزميات', titleEn: 'Homework 1: Algorithms', dueDate: new Date(Date.now() + 86400000 * 2).toISOString() }, 
-                { id: 2, type: 'project', course: 'CS204', titleAr: 'مشروع الخوارزميات', titleEn: 'Algorithms Project', dueDate: new Date(Date.now() + 86400000 * 14).toISOString() }
-            ],
-            schedule: {
-                day1: [ 
-                    { id: 1, nameAr: 'إحصاء هندسي', nameEn: 'Engineering Statistics', code: 'MATH101', start: 8, dur: 2, color: 'bg-[#56AB7C]', text: 'text-white', room: '101', profAr: 'د. أحمد سالم', profEn: 'Dr. Ahmed Salem', profEmail: 'ahmed.salem@uqu.edu.sa', type: 'lec', mode: 'in-person', bldgAr: 'قاعة الخوارزمي', bldgEn: 'Al-Khwarizmi Hall', collegeAr: 'الكلية الجامعية', collegeEn: 'University College' },
-                ],
-                day2: [ 
-                    { id: 3, nameAr: 'تحليل كيميائي', nameEn: 'Chemical Analysis', code: 'CH202', start: 10, dur: 2, color: 'bg-[#4F46E5]', text: 'text-white', room: 'Lab 3', profAr: 'أ. محمد علي', profEn: 'Mr. Mohamed Ali', profEmail: 'm.ali@uqu.edu.sa', type: 'lab', mode: 'in-person', bldgAr: 'مبنى المعامل', bldgEn: 'Labs Building', collegeAr: 'كلية العلوم التطبيقية', collegeEn: 'College of Applied Sciences' }
-                ],
-                day3: [ 
-                    { id: 5, nameAr: 'تصميم واجهات', nameEn: 'UI Design', code: 'CS305', start: 16, dur: 2, color: 'bg-[#0082C0]', text: 'text-white', room: '205', profAr: 'د. عمر', profEn: 'Dr. Omar', profEmail: 'omar@uqu.edu.sa', type: 'lec', mode: 'in-person', bldgAr: 'مبنى الحاسب', bldgEn: 'Computer College', collegeAr: 'كلية الحاسب', collegeEn: 'Computer Science' }
-                ],
-                day4: [], day5: [] 
-            },
-            exams: [
-                { id: 1, nameAr: 'أمن المعلومات', nameEn: 'Information Security', code: 'CS320', date: '2024-05-15', time: '09:00 - 11:00', locationAr: 'مبنى قاعة الملك سعود', locationEn: 'King Saud Hall Bldg', roomAr: 'قاعة أ', roomEn: 'Hall A', seat: '45', status: 'upcoming', instructionsAr: ['إحضار الهوية الجامعية', 'ممنوع الآلة الحاسبة'], instructionsEn: ['Bring University ID', 'No Calculators'] }
-            ],
-            enrolledCourses: [
-                { id: 1, code: 'CS101', hours: 3, section: '201', profAr: 'د. خالد', profEn: 'Dr. Khaled', time: '08:00 - 08:50', nameAr: 'مقدمة في البرمجة', nameEn: 'Intro to Programming' }
-            ],
-            availableCourses: [
-                { code: 'PHYS101', nameAr: 'فيزياء عامة', nameEn: 'General Physics', hours: 4, sections: [ { id: 's1', section: '302', profAr: 'د. سامي الحربي', profEn: 'Dr. Sami', time: '10:00 - 11:50', daysAr: 'الأحد - الثلاثاء', daysEn: 'Sun - Tue', status: 'open' } ] }
-            ]
-        };
-
-        const AppContext = createContext();
-
-        const AppProvider = ({ children }) => {
-            const [user, setUser] = useState(null);
-            const [data, setData] = useState(initialDatabaseState);
+        // Custom Hook to Fetch and Sync Data with Firebase seamlessly
+        const useFirebaseData = (path, defaultData) => {
+            const [data, setData] = useState(defaultData);
             const [loading, setLoading] = useState(true);
 
             useEffect(() => {
-                let isAuthFallback = false;
-                const initAuth = async () => {
+                let isMounted = true;
+                const fetchData = async () => {
                     try {
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                        } else {
-                            await signInAnonymously(auth);
+                        const response = await fetch(`${DB_BASE_URL}/${path}.json`);
+                        const result = await response.json();
+                        
+                        if (result !== null && isMounted) {
+                            setData(result);
+                        } else if (result === null && isMounted) {
+                            // Seed empty database with default data
+                            fetch(`${DB_BASE_URL}/${path}.json`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(defaultData)
+                            });
                         }
                     } catch (error) {
-                        console.error("Auth error:", error);
-                        isAuthFallback = true;
-                        setUser({ uid: 'demo-user-123' });
+                        console.error(`Firebase DB Error for ${path}:`, error);
+                    } finally {
+                        if (isMounted) setLoading(false);
                     }
                 };
-                initAuth();
-                const unsubscribe = onAuthStateChanged(auth, (u) => {
-                    if (!isAuthFallback && u) setUser(u);
-                });
-                return () => unsubscribe();
-            }, []);
+                fetchData();
+                return () => { isMounted = false; };
+            }, [path]);
 
-            useEffect(() => {
-                if (!user) return;
-                
-                const dbRef = ref(db, `users/${user.uid}/bawabati_db`);
-                
-                const unsubscribe = onValue(dbRef, (snapshot) => {
-                    if (snapshot.exists()) {
-                        setData(snapshot.val());
-                        setLoading(false);
-                    } else {
-                        set(dbRef, initialDatabaseState)
-                            .then(() => setLoading(false))
-                            .catch((error) => {
-                                console.error("DB Write Error (Permissions?):", error);
-                                setData(initialDatabaseState);
-                                setLoading(false);
-                            });
-                    }
-                }, (error) => {
-                    console.error("DB Read error:", error);
-                    setData(initialDatabaseState);
-                    setLoading(false);
-                });
-
-                return () => unsubscribe();
-            }, [user]);
-
-            const updateData = async (key, newValue) => {
-                if (!user) return;
-                setData(prev => ({ ...prev, [key]: newValue }));
-                try {
-                    const specificRef = ref(db, `users/${user.uid}/bawabati_db/${key}`);
-                    await set(specificRef, newValue);
-                } catch (error) {
-                    console.error("Update error:", error);
-                }
+            const updateData = (newData) => {
+                setData(newData); // Optimistic UI update
+                fetch(`${DB_BASE_URL}/${path}.json`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newData)
+                }).catch(err => console.error(`Firebase Update Error for ${path}:`, err));
             };
 
-            if (loading) return (
-                <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-dark-bg">
-                    <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary border-t-transparent shadow-lg"></div>
-                </div>
-            );
-
-            return <AppContext.Provider value={{ data, updateData }}>{children}</AppContext.Provider>;
+            return [data, updateData, loading];
         };
 
+        // --- Default Student Global Data ---
+        const defaultStudentData = {
+            nameAr: "فيصل عبدالله الخالد",
+            nameEn: "Faisal Abdullah Al-Khalid",
+            id: "444002548",
+            majorAr: "هندسة البرمجيات",
+            majorEn: "Software Engineering",
+            gpa: 3.35,
+            completedHours: 60,
+            currentHours: 18,
+            totalHours: 120,
+            avatar: null,
+            email: "s444002548@st.uqu.edu.sa",
+            collegeAr: "الحاسب الآلي ونظم المعلومات",
+            collegeEn: "Computer & Information Systems",
+            deptAr: "هندسة الحاسب الآلي",
+            deptEn: "Computer Engineering",
+            degreeAr: "بكالوريوس",
+            degreeEn: "Bachelor",
+            typeAr: "انتظام",
+            typeEn: "Regular",
+            advisorAr: "د. محمد الغامدي",
+            advisorEn: "Dr. Mohammed Al-Ghamdi",
+            advisorEmail: "advisor@uqu.edu.sa"
+        };
 
+        // --- Translations ---
         const translations = {
             ar: {
                 welcome: "مرحباً", dashboard: "الرئيسية", academic: "أكاديمي",
@@ -238,7 +169,7 @@
                 back: "عودة", print: "طباعة", download: "تحميل",
                 hoursCompleted: "منجزة", hoursCurrent: "حالية", hoursRemaining: "متبقية",
                 analytics: "التحليلات",
-                'student-dashboard': 'لوحة المعلومات',
+                'student-dashboard': 'لوحة المعلومات', 
                 exams: 'جدول الاختبارات', 
                 absences: 'الغيابات', 
                 record: 'السجل الأكاديمي',
@@ -258,105 +189,52 @@
                 'office-hours-view': 'مواعيدي المكتبية',
                 'recommendation-new': 'طلب رسالة توصية',
                 'recommendation-view': 'التوصيات الأكاديمية',
-                penalties: 'العقوبات',
-                rewards: 'المكافآت',
-                finance: 'السجل المالي',
-                docs: 'الوثائق والإفادات',
-                allowances: 'البدلات',
-                'id-photo': 'الصورة الشخصية',
+                penalties: 'العقوبات', rewards: 'المكافآت', finance: 'السجل المالي',
+                docs: 'الوثائق والإفادات', allowances: 'البدلات', 'id-photo': 'الصورة الشخصية',
                 'user-account': 'حسابي',
-                'total-hours-label': "إجمالي الساعات",
-                'view-all': "عرض الكل",
-                'upcoming-label': "قادمة",
-                'days-label': "أيام",
-                'month-may': "مايو",
-                'status-perfect': "مثالي! واصل تميزك 🌟",
-                'status-safe': "آمن",
-                'status-warning': "تحذير",
-                'status-denial': "حرمان",
-                'status-high-excused': "مرتفع (بعذر)",
-                'status-denial-limit': "حرمان (تجاوز الحد)",
-                appTitle: "بوابتي",
-                uniName: "جامعة أم القرى",
+                'total-hours-label': "إجمالي الساعات", 'view-all': "عرض الكل",
+                'upcoming-label': "قادمة", 'days-label': "أيام", 'month-may': "مايو",
+                'status-perfect': "مثالي! واصل تميزك 🌟", 'status-safe': "آمن",
+                'status-warning': "تحذير", 'status-denial': "حرمان", 'status-high-excused': "مرتفع (بعذر)",
+                'status-denial-limit': "حرمان (تجاوز الحد)", appTitle: "بوابتي", uniName: "جامعة أم القرى",
                 notificationTitle: "تنبيه هام: درجة غير مرصودة",
                 notificationBody: "لم يتم رصد درجة مقرر (نظم تشغيل) للفصل السابق. يرجى التواصل مع د. المهاد فوراً.",
                 'academic-events': 'الأحداث الأكاديمية',
             },
             en: {
-                welcome: "Welcome", 
-                dashboard: "Home",
-                academic: "Academic",
-                registration: "Registration", 
-                requests: "Requests", 
-                personal: "Personal",
-                gpa: "GPA", 
-                progress: "Progress Percentage", 
-                todaysLectures: "Today's Lectures",
-                upcomingExams: "Upcoming Exams", 
-                attendance: "Attendance Status", 
-                quickActions: "Quick Access",
-                schedule: "Course Schedule", 
-                results: "Grades & Results", 
-                plan: "Degree Plan", 
-                addDrop: "Add/Drop Courses", 
-                searchPlaceholder: "Search services...", 
-                statusRegular: "Regular Student", 
-                now: "Now",
-                chatbotTitle: "Academic Assistant (Sanad)", 
-                typeMessage: "Type a message...",
-                back: "Back", 
-                print: "Print", 
-                download: "Download",
-                hoursCompleted: "Completed Hours", 
-                hoursCurrent: "Current Hours", 
-                hoursRemaining: "Remaining Hours", 
-                analytics: "Analytics", 
-                'student-dashboard': 'Student Dashboard', 
-                exams: 'Exam Schedule', 
-                absences: 'Absences Record', 
-                record: 'Academic Record',
-                'offered-courses': 'Offered Courses',
-                'addDrop': 'E-Registration (Add/Drop)',
-                'dept-add': 'Add Course (Dept Approval)',
-                'dept-change': 'Change Section (Dept Approval)',
-                'dept-drop': 'Drop Course (Dept Approval)',
-                'dept-multi': 'Multi-Request / Swap',
-                'reg-requests': 'Registration Requests',
-                withdraw: 'Course Withdrawal',
-                'academic-action-new': 'New Academic Action Request', 
-                'academic-action-view': 'View Academic Actions',
-                'major-change-new': 'Request Major Change',
-                'major-change-view': 'View Major Change Requests',
-                'office-hours-book': 'Book Office Hours',
-                'office-hours-view': 'My Office Hours',
-                'recommendation-new': 'Request Recommendation',
-                'recommendation-view': 'Academic Recommendations',
-                penalties: 'Penalties & Violations', 
-                rewards: 'Rewards Record', 
-                finance: 'Financial Record',
-                docs: 'Documents & Certificates',
-                allowances: 'Allowances',
-                'id-photo': 'Personal Photo Upload',
-                'user-account': 'My Account',
-                'total-hours-label': "Total Hours", 
-                'view-all': "View All",
-                'upcoming-label': "Upcoming",
-                'days-label': "days",
-                'month-may': "May",
-                'status-perfect': "Perfect! Keep it up 🌟",
-                'status-safe': "Safe",
-                'status-warning': "Warning",
-                'status-denial': "Denial",
-                'status-high-excused': "High (Excused)",
-                'status-denial-limit': "Denial (Limit Exceeded)",
-                appTitle: "Bawabati",
-                uniName: "Umm Al-Qura University",
+                welcome: "Welcome", dashboard: "Home", academic: "Academic",
+                registration: "Registration", requests: "Requests", personal: "Personal",
+                gpa: "GPA", progress: "Progress Percentage", todaysLectures: "Today's Lectures",
+                upcomingExams: "Upcoming Exams", attendance: "Attendance Status", quickActions: "Quick Access",
+                schedule: "Course Schedule", results: "Grades & Results", plan: "Degree Plan", addDrop: "Add/Drop Courses",
+                searchPlaceholder: "Search services...", statusRegular: "Regular Student", now: "Now",
+                chatbotTitle: "Academic Assistant (Sanad)", typeMessage: "Type a message...",
+                back: "Back", print: "Print", download: "Download",
+                hoursCompleted: "Completed Hours", hoursCurrent: "Current Hours", hoursRemaining: "Remaining Hours",
+                analytics: "Analytics", 'student-dashboard': 'Student Dashboard', exams: 'Exam Schedule', 
+                absences: 'Absences Record', record: 'Academic Record',
+                'offered-courses': 'Offered Courses', 'addDrop': 'E-Registration (Add/Drop)',
+                'dept-add': 'Add Course (Dept Approval)', 'dept-change': 'Change Section (Dept Approval)',
+                'dept-drop': 'Drop Course (Dept Approval)', 'dept-multi': 'Multi-Request / Swap',
+                'reg-requests': 'Registration Requests', withdraw: 'Course Withdrawal',
+                'academic-action-new': 'New Academic Action Request', 'academic-action-view': 'View Academic Actions',
+                'major-change-new': 'Request Major Change', 'major-change-view': 'View Major Change Requests',
+                'office-hours-book': 'Book Office Hours', 'office-hours-view': 'My Office Hours',
+                'recommendation-new': 'Request Recommendation', 'recommendation-view': 'Academic Recommendations',
+                penalties: 'Penalties & Violations', rewards: 'Rewards Record', finance: 'Financial Record',
+                docs: 'Documents & Certificates', allowances: 'Allowances', 'id-photo': 'Personal Photo Upload',
+                'user-account': 'My Account', 'total-hours-label': "Total Hours", 'view-all': "View All",
+                'upcoming-label': "Upcoming", 'days-label': "days", 'month-may': "May",
+                'status-perfect': "Perfect! Keep it up 🌟", 'status-safe': "Safe", 'status-warning': "Warning",
+                'status-denial': "Denial", 'status-high-excused': "High (Excused)", 'status-denial-limit': "Denial (Limit Exceeded)",
+                appTitle: "Bawabati", uniName: "Umm Al-Qura University",
                 notificationTitle: "Important Alert: Unrecorded Grade",
                 notificationBody: "Grade for (Operating Systems) from previous semester is not recorded. Please contact Dr. Al-Muhad immediately.",
                 'academic-events': 'Academic Events',
             }
         };
 
+        // --- Helper Components ---
         const HeaderPage = ({ title, onBack, extra, lang }) => {
             const isAr = lang === 'ar';
             return (
@@ -383,19 +261,21 @@
 
         const Chatbot = ({ t }) => {
             const [isOpen, setIsOpen] = useState(false);
-            const [messages, setMessages] = useState([{ id: 1, text: "مرحباً بك! أنا سند، مساعدك الأكاديمي. كيف يمكنني خدمتك اليوم؟", sender: 'bot' }]);
+            const [messages, setMessages] = useState([
+                { id: 1, text: "مرحباً بك يا فيصل! أنا سند، مساعدك الأكاديمي. كيف يمكنني خدمتك اليوم؟", sender: 'bot' }
+            ]);
             const [input, setInput] = useState("");
             const messagesEndRef = useRef(null);
 
-            const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); };
-            useEffect(() => { scrollToBottom(); }, [messages, isOpen]);
+            useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isOpen]);
 
             const handleSend = () => {
                 if (!input.trim()) return;
                 setMessages(prev => [...prev, { id: Date.now(), text: input, sender: 'user' }]);
                 setInput("");
                 setTimeout(() => {
-                    setMessages(prev => [...prev, { id: Date.now() + 1, text: "تم استلام رسالتك", sender: 'bot' }]);
+                    const responses = ["يمكنني مساعدتك في استعراض جدولك الدراسي أو متابعة طلباتك.", "هل تود الاستفسار عن مواعيد الحذف والإضافة؟", "يمكنك الوصول للخدمات الأكاديمية من القائمة الجانبية.", "جاري التحقق من سجلك الأكاديمي..."];
+                    setMessages(prev => [...prev, { id: Date.now() + 1, text: responses[Math.floor(Math.random() * responses.length)], sender: 'bot' }]);
                 }, 1000);
             };
 
@@ -408,17 +288,19 @@
                         <div className="fixed bottom-24 left-6 z-40 w-[90vw] md:w-96 bg-white dark:bg-dark-card rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col chat-enter h-[500px] max-h-[70vh]">
                             <div className="bg-gradient-to-r from-primary to-teal-800 p-4 flex items-center gap-3 shadow-md">
                                 <div className="p-2 bg-white/20 rounded-full text-white backdrop-blur-sm shadow-inner"><User size={20}/></div>
-                                <div><h3 className="font-bold text-white text-base">{t.chatbotTitle}</h3></div>
+                                <div><h3 className="font-bold text-white text-base">{t.chatbotTitle}</h3><span className="flex items-center gap-1.5 text-[10px] text-teal-100 font-medium"><div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div> متصل الآن</span></div>
                             </div>
                             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-800/30">
                                 {messages.map(msg => (
-                                    <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-start' : 'justify-end'} animate-fade-in`}><div className={`max-w-[80%] p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm ${msg.sender === 'user' ? 'bg-primary text-white rounded-br-none' : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-bl-none border border-gray-100 dark:border-gray-600'}`}>{msg.text}</div></div>
+                                    <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-start' : 'justify-end'} animate-fade-in`}>
+                                        <div className={`max-w-[80%] p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm ${msg.sender === 'user' ? 'bg-primary text-white rounded-br-none' : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-bl-none border border-gray-100 dark:border-gray-600'}`}>{msg.text}</div>
+                                    </div>
                                 ))}
                                 <div ref={messagesEndRef} />
                             </div>
                             <div className="p-3 bg-white dark:bg-dark-card border-t border-gray-100 dark:border-gray-700 flex gap-2 items-center">
-                                <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSend()} placeholder={t.typeMessage} className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-primary transition-all dark:text-white"/>
-                                <button onClick={handleSend} disabled={!input.trim()} className="p-3 bg-primary text-white rounded-2xl hover:bg-teal-700 transition shadow-sm"><Send size={18} className="rotate-180"/></button>
+                                <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSend()} placeholder={t.typeMessage} className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all dark:text-white"/>
+                                <button onClick={handleSend} disabled={!input.trim()} className="p-3 bg-primary text-white rounded-2xl hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm active:scale-95"><Send size={18} className="rotate-180"/></button>
                             </div>
                         </div>
                     )}
@@ -428,50 +310,48 @@
 
         const Toast = ({ message, type, onClose }) => (
             <div className={`fixed bottom-4 left-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg text-white font-bold text-sm animate-fade-in ${type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`}>
-                {type === 'success' ? <CheckCircle2 size={18}/> : <AlertTriangle size={18}/>}
-                {message}
+                {type === 'success' ? <CheckCircle2 size={18}/> : <AlertTriangle size={18}/>} {message}
                 <button onClick={onClose} className="mr-2 opacity-80 hover:opacity-100"><X size={14}/></button>
             </div>
         );
 
-        const NotificationBell = ({ onClick }) => {
-            const { data } = useContext(AppContext);
-            const hasUnread = data.notifications?.some(n => !n.read);
-            return (
-                <div className="relative z-50">
-                    <button onClick={onClick} className="p-2 relative bg-white dark:bg-dark-card rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition shadow-sm group">
-                        <Bell size={20} className="text-gray-600 dark:text-gray-300 group-hover:text-primary transition-colors"/>
-                        {hasUnread && <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse border-2 border-white dark:border-dark-card"></span>}
-                    </button>
-                </div>
-            )
-        };
+        const NotificationBell = ({ onClick }) => (
+            <div className="relative z-50">
+                <button onClick={onClick} className="p-2 relative bg-white dark:bg-dark-card rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition shadow-sm group">
+                    <Bell size={20} className="text-gray-600 dark:text-gray-300 group-hover:text-primary transition-colors"/>
+                    <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse border-2 border-white dark:border-dark-card"></span>
+                </button>
+            </div>
+        );
+
+        // --- Pages mapped to Firebase ---
 
         const NotificationsPage = ({ onBack, lang }) => {
             const isAr = lang === 'ar';
-            const { data, updateData } = useContext(AppContext);
-            const t = { title: isAr ? "التنبيهات" : "Notifications", markRead: isAr ? "تحديد الكل كمقروء" : "Mark all as read" };
+            const t = { title: isAr ? "التنبيهات" : "Notifications", markRead: isAr ? "تحديد الكل كمقروء" : "Mark all as read", now: isAr ? "الآن" : "Now", minAgo: isAr ? "د" : "m", hourAgo: isAr ? "س" : "h", dayAgo: isAr ? "يوم" : "d" };
+            
+            const defaultNotifications = [
+                { id: 1, type: 'alert', titleAr: "تنبيه هام: درجة غير مرصودة", titleEn: "Important: Unrecorded Grade", bodyAr: "لم يتم رصد درجة مقرر (نظم تشغيل) للفصل السابق.", bodyEn: "Grade for OS course not recorded.", timeAr: t.now, timeEn: t.now, read: false },
+                { id: 2, type: 'info', titleAr: "تذكير: موعد التسجيل", titleEn: "Reminder: Registration", bodyAr: "يبدأ التسجيل للفصل القادم يوم الأحد.", bodyEn: "Registration starts on Sunday.", timeAr: `2 ${t.hourAgo}`, timeEn: "2 h", read: false },
+                { id: 3, type: 'success', titleAr: "تم قبول الطلب", titleEn: "Request Approved", bodyAr: "تمت الموافقة على طلب الاعتذار عن المقرر.", bodyEn: "Course withdrawal approved.", timeAr: `1 ${t.dayAgo}`, timeEn: "1 d", read: true }
+            ];
+
+            const [notifications, setNotifications] = useFirebaseData('notifications', defaultNotifications);
 
             const getIcon = (type) => {
-                switch(type) {
-                    case 'alert': return <AlertTriangle size={20} className="text-red-500"/>;
-                    case 'success': return <CheckCircle2 size={20} className="text-green-500"/>;
-                    case 'warning': return <AlertCircle size={20} className="text-orange-500"/>;
-                    default: return <Bell size={20} className="text-blue-500"/>;
-                }
+                switch(type) { case 'alert': return <AlertTriangle size={20} className="text-red-500"/>; case 'success': return <CheckCircle2 size={20} className="text-green-500"/>; case 'warning': return <AlertCircle size={20} className="text-orange-500"/>; default: return <Bell size={20} className="text-blue-500"/>; }
             };
 
-            const markAllAsRead = () => {
-                const updated = data.notifications?.map(n => ({ ...n, read: true }));
-                updateData('notifications', updated);
+            const handleMarkAllRead = () => {
+                setNotifications(notifications.map(n => ({ ...n, read: true })));
             };
 
             return (
                 <div className="animate-fade-in space-y-6">
-                    <HeaderPage title={t.title} onBack={onBack} lang={lang} extra={<button onClick={markAllAsRead} className="text-xs font-bold text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg transition">{t.markRead}</button>} />
+                    <HeaderPage title={t.title} onBack={onBack} lang={lang} extra={<button onClick={handleMarkAllRead} className="text-xs font-bold text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg transition">{t.markRead}</button>} />
                     <div className="space-y-3">
-                        {data.notifications?.map(n => (
-                            <div key={n.id} className={`p-4 rounded-2xl border flex gap-4 transition-all hover:shadow-md ${n.read ? 'bg-white dark:bg-dark-card border-gray-100 dark:border-gray-700 opacity-80' : 'bg-white dark:bg-dark-card border-l-4 border-l-primary shadow-sm'}`}>
+                        {notifications?.map(n => (
+                            <div key={n.id} className={`p-4 rounded-2xl border flex gap-4 transition-all hover:shadow-md ${n.read ? 'bg-white dark:bg-dark-card border-gray-100 dark:border-gray-700 opacity-80' : 'bg-white dark:bg-dark-card border-l-4 border-l-primary border-t-gray-100 border-r-gray-100 border-b-gray-100 dark:border-t-gray-700 dark:border-r-gray-700 dark:border-b-gray-700 shadow-sm'}`}>
                                 <div className={`p-3 rounded-full h-fit shrink-0 ${n.read ? 'bg-gray-100 dark:bg-gray-800 text-gray-400' : 'bg-gray-50 dark:bg-gray-800'}`}>{getIcon(n.type)}</div>
                                 <div className="flex-1">
                                     <div className="flex justify-between items-start">
@@ -490,85 +370,79 @@
 
         const StudentDashboardPage = ({ onBack, lang }) => {
             const isAr = lang === 'ar';
-            const { data } = useContext(AppContext);
-            const gpaData = data.gpaData || [];
-            const attendanceStats = data.attendanceStats || [];
-            
-            const t = {
-                title: isAr ? "لوحة معلومات الطالب" : "Student Dashboard",
-                registered: isAr ? "المقررات المسجلة" : "Registered Courses",
-                remaining: isAr ? "المقررات المتبقية" : "Remaining Courses",
-                earned: isAr ? "الساعات المكتسبة" : "Earned Hours",
-                gpaAnalysis: isAr ? "تحليل المعدل التراكمي" : "GPA Analysis",
-                semGPA: isAr ? "المعدل الفصلي" : "Semester GPA",
-                attStats: isAr ? "إحصائيات الحضور والغياب" : "Attendance Statistics",
-                safe: isAr ? "آمن" : "Safe", warning: isAr ? "تنبيه" : "Warning", denial: isAr ? "حرمان" : "Denial", absence: isAr ? "غياب" : "Absence", hours: isAr ? "ساعات" : "Hrs"
-            };
+            const t = { title: isAr ? "لوحة معلومات الطالب" : "Student Dashboard", registered: isAr ? "المقررات المسجلة" : "Registered Courses", remaining: isAr ? "المقررات المتبقية" : "Remaining Courses", earned: isAr ? "الساعات المكتسبة" : "Earned Hours", gpaAnalysis: isAr ? "تحليل المعدل التراكمي" : "GPA Analysis", semGPA: isAr ? "المعدل الفصلي" : "Semester GPA", attStats: isAr ? "إحصائيات الحضور والغياب" : "Attendance Statistics", attDesc: isAr ? "توضيح لنسب الحضور ومقدار الغياب" : "Attendance percentages and absences", safe: isAr ? "آمن" : "Safe", warning: isAr ? "تنبيه" : "Warning", denial: isAr ? "حرمان" : "Denial", absence: isAr ? "غياب" : "Absence", hours: isAr ? "ساعات" : "Hrs" };
+
+            const defaultGpaData = [
+                { semAr: 'المستوى 1', semEn: 'Level 1', gpa: 3.85 }, { semAr: 'المستوى 2', semEn: 'Level 2', gpa: 3.60 },
+                { semAr: 'المستوى 3', semEn: 'Level 3', gpa: 3.45 }, { semAr: 'المستوى 4', semEn: 'Level 4', gpa: 3.35 }
+            ];
+            const defaultAttendanceStats = [
+                { code: 'SE301', nameAr: 'هندسة برمجيات', nameEn: 'Software Engineering', pct: 98, absent: 1, total: 45 },
+                { code: 'CS305', nameAr: 'نظم تشغيل', nameEn: 'Operating Systems', pct: 91, absent: 4, total: 45 },
+                { code: 'MATH201', nameAr: 'إحصاء هندسي', nameEn: 'Engineering Statistics', pct: 85, absent: 6, total: 40 },
+                { code: 'PHYS101', nameAr: 'فيزياء عامة', nameEn: 'General Physics', pct: 75, absent: 12, total: 48 }
+            ];
+
+            const [gpaData] = useFirebaseData('dashboardGpaData', defaultGpaData);
+            const [attendanceStats] = useFirebaseData('dashboardAttendanceStats', defaultAttendanceStats);
+            const [student] = useFirebaseData('studentInfo', defaultStudentData);
 
             const [hoveredPoint, setHoveredPoint] = useState(null);
             const chartHeight = 220, chartWidth = 800, paddingX = 80, paddingY = 50, maxGPA = 4.0, minGPA = 2.0;
 
-            const points = gpaData.map((item, index) => {
-                const step = (chartWidth - (paddingX * 2)) / (Math.max(gpaData.length - 1, 1));
+            const safeGpaData = gpaData || defaultGpaData;
+            const points = safeGpaData.map((item, index) => {
+                const step = (chartWidth - (paddingX * 2)) / (safeGpaData.length - 1);
                 const xPos = chartWidth - paddingX - (index * step);
                 const yPos = chartHeight - paddingY - ((item.gpa - minGPA) / (maxGPA - minGPA)) * (chartHeight - (paddingY * 2));
                 return { x: xPos, y: yPos, ...item };
             });
 
             const linePath = "M" + points.map(p => `${p.x},${p.y}`).join(" L");
-            const areaPath = `${linePath} L${points[points.length-1]?.x},${chartHeight - paddingY} L${points[0]?.x},${chartHeight - paddingY} Z`;
+            const areaPath = `${linePath} L${points[points.length-1].x},${chartHeight - paddingY} L${points[0].x},${chartHeight - paddingY} Z`;
 
             return (
                 <div className="animate-fade-in space-y-6 pb-10">
                     <HeaderPage title={t.title} onBack={onBack} lang={lang} />
-                    
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-white dark:bg-dark-card rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center text-center h-48 transition hover:shadow-md">
-                            <div className="mb-4 text-primary bg-primary/10 p-4 rounded-full"><BookOpen size={32} strokeWidth={1.5} /></div>
-                            <h3 className="text-gray-500 font-bold mb-2">{t.registered}</h3>
-                            <span className="text-3xl font-bold text-gray-800 dark:text-white">6</span>
-                        </div>
-                        <div className="bg-white dark:bg-dark-card rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center text-center h-48 transition hover:shadow-md">
-                            <div className="mb-4 text-blue-600 bg-blue-50 p-4 rounded-full"><Layers size={32} strokeWidth={1.5} /></div>
-                            <h3 className="text-gray-500 font-bold mb-2">{t.remaining}</h3>
-                            <span className="text-3xl font-bold text-gray-800 dark:text-white">{data.studentData.totalHours - data.studentData.completedHours}</span>
-                        </div>
-                        <div className="bg-white dark:bg-dark-card rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center text-center h-48 transition hover:shadow-md">
-                            <div className="mb-4 text-gold bg-yellow-50 p-4 rounded-full"><Medal size={32} strokeWidth={1.5} /></div>
-                            <h3 className="text-gray-500 font-bold mb-2">{t.earned}</h3>
-                            <span className="text-3xl font-bold text-gray-800 dark:text-white">{data.studentData.completedHours}</span>
-                        </div>
+                        <div className="bg-white dark:bg-dark-card rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center text-center h-48"><div className="mb-4 text-primary bg-primary/10 p-4 rounded-full"><BookOpen size={32} /></div><h3 className="text-gray-500 font-bold mb-2">{t.registered}</h3><span className="text-3xl font-bold text-gray-800 dark:text-white">6</span></div>
+                        <div className="bg-white dark:bg-dark-card rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center text-center h-48"><div className="mb-4 text-blue-600 bg-blue-50 p-4 rounded-full"><Layers size={32} /></div><h3 className="text-gray-500 font-bold mb-2">{t.remaining}</h3><span className="text-3xl font-bold text-gray-800 dark:text-white">{student?.totalHours - (student?.completedHours + student?.currentHours) || 42}</span></div>
+                        <div className="bg-white dark:bg-dark-card rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center text-center h-48"><div className="mb-4 text-gold bg-yellow-50 p-4 rounded-full"><Medal size={32} /></div><h3 className="text-gray-500 font-bold mb-2">{t.earned}</h3><span className="text-3xl font-bold text-gray-800 dark:text-white">{student?.completedHours || 60}</span></div>
                     </div>
 
                     <div className="bg-white dark:bg-dark-card rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-                        <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-bold text-primary dark:text-teal-400">{t.gpaAnalysis}</h3></div>
+                        <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-bold text-primary dark:text-teal-400">{t.gpaAnalysis}</h3><div className="flex gap-2"><span className="text-xs font-bold text-gray-400 flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-primary"></div> {t.semGPA}</span></div></div>
                         <div className="w-full overflow-hidden relative">
-                            {hoveredPoint && (
-                                <div className={`absolute inset-0 flex items-center justify-center pointer-events-none z-10 transition-all duration-300 opacity-100 translate-y-0`}>
-                                    <div className="bg-white/95 dark:bg-dark-card/95 backdrop-blur-md px-6 py-3 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-600 text-center min-w-[140px]">
-                                        <p className="text-[10px] text-gray-400 font-bold mb-0.5 uppercase tracking-wider">{isAr ? hoveredPoint.semAr : hoveredPoint.semEn}</p>
-                                        <div className="flex items-baseline justify-center gap-1"><span className="text-3xl font-bold text-primary dark:text-teal-400 font-mono tracking-tighter drop-shadow-sm">{hoveredPoint.gpa.toFixed(2)}</span></div>
-                                    </div>
-                                </div>
-                            )}
+                            <div className={`absolute inset-0 flex items-center justify-center pointer-events-none z-10 transition-all duration-300 ${hoveredPoint ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}><div className="bg-white/95 dark:bg-dark-card/95 backdrop-blur-md px-6 py-3 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-600 text-center min-w-[140px]"><p className="text-[10px] text-gray-400 font-bold mb-0.5 uppercase tracking-wider">{isAr ? hoveredPoint?.semAr : hoveredPoint?.semEn}</p><div className="flex items-baseline justify-center gap-1"><span className="text-3xl font-bold text-primary dark:text-teal-400 font-mono tracking-tighter drop-shadow-sm">{hoveredPoint?.gpa.toFixed(2)}</span><span className="text-[10px] text-gray-400 font-mono">/ 4.00</span></div></div></div>
                             <div className="w-full h-80 relative select-none">
                                 <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-full overflow-visible">
-                                    <defs><linearGradient id="chartFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#006771" stopOpacity="0.3"/><stop offset="100%" stopColor="#006771" stopOpacity="0"/></linearGradient></defs>
-                                    {[2.5, 3.0, 3.5, 4.0].map((val, i) => {
-                                        const y = chartHeight - paddingY - ((val - minGPA) / (maxGPA - minGPA)) * (chartHeight - (paddingY * 2));
-                                        return <g key={i}><line x1={paddingX} y1={y} x2={chartWidth - paddingX} y2={y} stroke="#e5e7eb" strokeWidth="1" strokeDasharray="4"/><text x={chartWidth - paddingX + 10} y={y + 4} className="text-[10px] fill-gray-400 font-mono">{val.toFixed(1)}</text></g>;
-                                    })}
-                                    <path d={areaPath} fill="url(#chartFill)" />
-                                    <path d={linePath} fill="none" stroke="#006771" strokeWidth="3" strokeLinecap="round" />
-                                    {points.map((p, i) => (
-                                        <g key={i} onMouseEnter={() => setHoveredPoint(p)} onMouseLeave={() => setHoveredPoint(null)} className="cursor-pointer group">
-                                            <circle cx={p.x} cy={p.y} r="35" fill="transparent" />
-                                            <circle cx={p.x} cy={p.y} r={hoveredPoint === p ? 10 : 6} fill={hoveredPoint === p ? "#B18E51" : "white"} stroke="#006771" strokeWidth={hoveredPoint === p ? 0 : 3} className="transition-all duration-300"/>
-                                            <text x={p.x} y={p.y - 15} textAnchor="middle" className={`text-[10px] font-bold fill-gray-500 dark:fill-gray-400 font-mono transition-opacity duration-300 ${hoveredPoint === p ? 'opacity-0' : 'opacity-100'}`}>{p.gpa.toFixed(2)}</text>
-                                            <text x={p.x} y={chartHeight - 5} textAnchor="middle" className={`text-xs font-bold transition-all ${hoveredPoint === p ? 'fill-primary text-base' : 'fill-gray-500 dark:fill-gray-400'}`}>{isAr ? p.semAr : p.semEn}</text>
-                                        </g>
-                                    ))}
+                                    <defs><linearGradient id="chartFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#006771" stopOpacity="0.3"/><stop offset="100%" stopColor="#006771" stopOpacity="0"/></linearGradient><filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.2"/></filter></defs>
+                                    {[2.5, 3.0, 3.5, 4.0].map((val, i) => { const y = chartHeight - paddingY - ((val - minGPA) / (maxGPA - minGPA)) * (chartHeight - (paddingY * 2)); return (<g key={i}><line x1={paddingX} y1={y} x2={chartWidth - paddingX} y2={y} stroke="#e5e7eb" strokeWidth="1" strokeDasharray="4"/><text x={chartWidth - paddingX + 10} y={y + 4} className="text-[10px] fill-gray-400 font-mono">{val.toFixed(1)}</text></g>); })}
+                                    <path d={areaPath} fill="url(#chartFill)" /><path d={linePath} fill="none" stroke="#006771" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" filter="url(#shadow)" />
+                                    {points.map((p, i) => (<g key={i} onMouseEnter={() => setHoveredPoint(p)} onMouseLeave={() => setHoveredPoint(null)} className="cursor-pointer group"><circle cx={p.x} cy={p.y} r="35" fill="transparent" /><circle cx={p.x} cy={p.y} r={hoveredPoint === p ? 10 : 6} fill={hoveredPoint === p ? "#B18E51" : "white"} stroke="#006771" strokeWidth={hoveredPoint === p ? 0 : 3} className="transition-all duration-300"/><text x={p.x} y={p.y - 15} textAnchor="middle" className={`text-[10px] font-bold fill-gray-500 dark:fill-gray-400 font-mono transition-opacity duration-300 ${hoveredPoint === p ? 'opacity-0' : 'opacity-100'}`}>{p.gpa.toFixed(2)}</text><text x={p.x} y={chartHeight - 5} textAnchor="middle" className={`text-xs font-bold transition-all ${hoveredPoint === p ? 'fill-primary text-base' : 'fill-gray-500 dark:fill-gray-400'}`}>{isAr ? p.semAr : p.semEn}</text></g>))}
                                 </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-dark-card rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4"><div><h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2"><FileCheck size={24} className="text-primary" /> {t.attStats}</h3><p className="text-xs text-gray-500 mt-1">{t.attDesc}</p></div><div className="flex flex-wrap gap-3 text-[10px] font-bold bg-gray-50 dark:bg-gray-800/50 p-2 rounded-lg border border-gray-100 dark:border-gray-700"><div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded bg-emerald-500"></div> {t.safe} (&lt;5%)</div><div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded bg-amber-400"></div> {t.warning} (5-14%)</div><div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded bg-red-500"></div> {t.denial} (&ge;15%)</div></div></div>
+                        <div className="relative w-full h-[400px]">
+                            <div className="absolute inset-0 flex items-end justify-around px-2 pb-6 pt-12 z-10">
+                                {attendanceStats?.map((item, i) => {
+                                    const absencePct = Math.round((item.absent / item.total) * 100);
+                                    const attendancePct = 100 - absencePct;
+                                    let barColor = 'bg-emerald-500', lightColor = 'bg-emerald-50 dark:bg-emerald-900/10', textColor = 'text-emerald-600 dark:text-emerald-400';
+                                    if(absencePct >= 15) { barColor = 'bg-red-500'; lightColor = 'bg-red-50 dark:bg-red-900/10'; textColor = 'text-red-600 dark:text-red-400'; } else if (absencePct >= 5) { barColor = 'bg-amber-400'; lightColor = 'bg-amber-50 dark:bg-amber-900/10'; textColor = 'text-amber-600 dark:text-amber-400'; }
+                                    return (
+                                        <div key={i} className="relative flex flex-col items-center justify-end h-full w-full max-w-[80px] group cursor-pointer">
+                                            <div className={`mb-3 px-3 py-1 rounded-lg text-sm font-bold shadow-sm transition-all transform group-hover:-translate-y-2 ${lightColor} ${textColor}`}>{absencePct}% <span className="text-[10px] opacity-70 font-normal">{t.absence}</span></div>
+                                            <div className="w-12 md:w-16 bg-gray-100 dark:bg-gray-800 rounded-t-lg relative overflow-hidden h-full flex items-end shadow-inner"><div className={`w-full ${barColor} rounded-t-lg transition-all duration-1000 relative`} style={{ height: `${attendancePct}%` }}><div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent"></div></div></div>
+                                            <div className="mt-3 text-xs md:text-sm font-bold text-gray-800 dark:text-white text-center w-full leading-tight px-0.5 min-h-[2.5rem] flex items-start justify-center" title={isAr ? item.nameAr : item.nameEn}><span className="line-clamp-2">{isAr ? item.nameAr : item.nameEn}</span></div>
+                                            <div className="text-[10px] text-gray-500 dark:text-gray-400 font-mono mt-0.5">-{item.absent} {t.hours}</div>
+                                        </div>
+                                    )
+                                })}
                             </div>
                         </div>
                     </div>
@@ -578,21 +452,52 @@
 
         const AcademicEventsPage = ({ onBack, lang }) => {
             const isAr = lang === 'ar';
-            const { data } = useContext(AppContext);
-            const events = data.events || [];
-            const t = { title: isAr ? "الأحداث الأكاديمية" : "Academic Events", assignment: isAr ? "واجب" : "Assignment", project: isAr ? "مشروع" : "Project", exam: isAr ? "اختبار" : "Exam" };
+            const [now, setNow] = useState(new Date());
+            useEffect(() => { const timer = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(timer); }, []);
+
+            const t = { title: isAr ? "الأحداث الأكاديمية" : "Academic Events", assignment: isAr ? "واجب" : "Assignment", project: isAr ? "مشروع" : "Project", exam: isAr ? "اختبار" : "Exam", remaining: isAr ? "الوقت المتبقي" : "Time Remaining", days: isAr ? "يوم" : "d", hours: isAr ? "س" : "h", min: isAr ? "د" : "m", sec: isAr ? "ث" : "s", completed: isAr ? "منتهى" : "Completed", due: isAr ? "موعد التسليم" : "Due Date" };
+
+            const defaultEvents = [
+                { id: 1, type: 'assignment', course: 'CS101', titleAr: 'واجب 1: الخوارزميات', titleEn: 'HW 1: Algorithms', dueDateStr: new Date(Date.now() + 86400000 * 2 + 3600000 * 5).toISOString() }, 
+                { id: 2, type: 'project', course: 'CS204', titleAr: 'مشروع الخوارزميات', titleEn: 'Algorithms Project', dueDateStr: new Date(Date.now() + 86400000 * 14).toISOString() }, 
+                { id: 3, type: 'exam', course: 'MATH201', titleAr: 'الاختبار النصفي', titleEn: 'Midterm Exam', dueDateStr: new Date(Date.now() + 86400000 * 5 + 3600000 * 2).toISOString() }
+            ];
+
+            const [events] = useFirebaseData('academicEvents', defaultEvents);
+
+            const getTimeRemaining = (dueDateStr) => {
+                const total = Date.parse(dueDateStr) - Date.parse(now);
+                if (total <= 0) return null;
+                return { 
+                    seconds: Math.floor((total / 1000) % 60), 
+                    minutes: Math.floor((total / 1000 / 60) % 60), 
+                    hours: Math.floor((total / (1000 * 60 * 60)) % 24), 
+                    days: Math.floor(total / (1000 * 60 * 60 * 24)) 
+                };
+            };
+
+            const getTypeStyle = (type) => {
+                switch(type) {
+                    case 'exam': return { bg: 'bg-red-50 dark:bg-red-900/10', text: 'text-red-600 dark:text-red-400', border: 'border-red-100 dark:border-red-800' };
+                    case 'project': return { bg: 'bg-purple-50 dark:bg-purple-900/10', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-100 dark:border-purple-800' };
+                    default: return { bg: 'bg-blue-50 dark:bg-blue-900/10', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-100 dark:border-blue-800' };
+                }
+            };
 
             return (
                 <div className="animate-fade-in space-y-6">
                     <HeaderPage title={t.title} onBack={onBack} lang={lang} />
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {events.map(event => (
-                            <div key={event.id} className="bg-white dark:bg-dark-card rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
-                                <span className="px-2 py-1 rounded-lg text-xs font-bold bg-blue-50 text-blue-600">{t[event.type] || event.type}</span>
-                                <h3 className="font-bold text-lg text-gray-800 dark:text-white mt-2">{isAr ? event.titleAr : event.titleEn}</h3>
-                                <p className="text-sm text-gray-500 mt-2">{new Date(event.dueDate).toLocaleDateString()}</p>
-                            </div>
-                        ))}
+                        {events?.map(event => {
+                            const remaining = getTimeRemaining(event.dueDateStr);
+                            const style = getTypeStyle(event.type);
+                            return (
+                                <div key={event.id} className="bg-white dark:bg-dark-card rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col hover:shadow-md transition-all duration-300 overflow-hidden">
+                                    <div className={`p-4 border-b ${style.border} ${style.bg}`}><div className="flex justify-between items-start"><span className={`px-2 py-1 rounded-lg text-xs font-bold bg-white/50 dark:bg-black/20 ${style.text}`}>{t[event.type]}</span><span className="text-xs font-mono font-bold text-gray-500 bg-white/50 dark:bg-black/20 px-2 py-1 rounded">{event.course}</span></div><h3 className="font-bold text-lg text-gray-800 dark:text-white mt-2 leading-tight">{isAr ? event.titleAr : event.titleEn}</h3></div>
+                                    <div className="p-5 flex-1 flex flex-col justify-between gap-4"><div><p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">{t.due}</p><div className="text-sm font-medium text-gray-600 dark:text-gray-300 flex items-center gap-2"><Calendar size={16} className="text-primary"/><span className="dir-ltr">{new Date(event.dueDateStr).toLocaleDateString()}</span></div></div><div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3 border border-gray-100 dark:border-gray-700"><p className="text-[10px] text-gray-400 font-bold mb-2 text-center">{t.remaining}</p>{remaining ? (<div className="flex gap-2 justify-center items-center font-mono text-gray-700 dark:text-gray-200 dir-ltr"><div className="text-center"><span className="text-xl font-bold block leading-none">{remaining.days}</span><span className="text-[9px] text-gray-400">{t.days}</span></div><span className="text-gray-300 mb-3">:</span><div className="text-center"><span className="text-xl font-bold block leading-none">{remaining.hours}</span><span className="text-[9px] text-gray-400">{t.hours}</span></div><span className="text-gray-300 mb-3">:</span><div className="text-center"><span className="text-xl font-bold block leading-none">{remaining.minutes}</span><span className="text-[9px] text-gray-400">{t.min}</span></div><span className="text-gray-300 mb-3">:</span><div className="text-center"><span className="text-xl font-bold block leading-none text-primary">{remaining.seconds}</span><span className="text-[9px] text-gray-400">{t.sec}</span></div></div>) : (<div className="text-center text-red-500 font-bold flex items-center justify-center gap-2"><Clock size={16}/> {t.completed}</div>)}</div></div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             );
@@ -600,10 +505,8 @@
 
         const SchedulePage = ({ onBack, t, lang }) => {
             const isAr = lang === 'ar';
-            const { data } = useContext(AppContext);
-            const schedule = data.schedule || {};
-            const weekDaysKey = ['day1', 'day2', 'day3', 'day4', 'day5'];
-            const weekDaysLabels = isAr ? ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'] : ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
+            const weekDays = ['day0', 'day1', 'day2', 'day3', 'day4'];
+            const displayDays = isAr ? { day0: 'الأحد', day1: 'الاثنين', day2: 'الثلاثاء', day3: 'الأربعاء', day4: 'الخميس' } : { day0: 'Sunday', day1: 'Monday', day2: 'Tuesday', day3: 'Wednesday', day4: 'Thursday' };
             
             const timeSlots = [];
             for (let i = 8; i <= 21; i++) {
@@ -612,25 +515,55 @@
                 timeSlots.push({ hour: i, label: isAr ? `${end}:50 - ${start}:00` : `${start}:00 - ${end}:50` });
             }
 
+            const defaultSchedule = {
+                day0: [ { id: 1, nameAr: 'إحصاء هندسي', nameEn: 'Eng. Statistics', code: 'MATH101', start: 8, dur: 2, color: 'bg-[#56AB7C]', text: 'text-white', room: '101', profAr: 'د. أحمد', profEn: 'Dr. Ahmed', type: 'lec', mode: 'in-person', bldgAr: 'مبنى أ', bldgEn: 'Bldg A', collegeAr: 'الجامعية', collegeEn: 'College' } ],
+                day1: [ { id: 3, nameAr: 'تحليل كيميائي', nameEn: 'Chem Analysis', code: 'CH202', start: 10, dur: 2, color: 'bg-[#4F46E5]', text: 'text-white', room: 'Lab 3', profAr: 'أ. محمد', profEn: 'Mr. Mohamed', type: 'lab', mode: 'in-person', bldgAr: 'مبنى المعامل', bldgEn: 'Labs Bldg', collegeAr: 'العلوم', collegeEn: 'Sciences' } ],
+                day2: [ { id: 5, nameAr: 'تصميم واجهات', nameEn: 'UI Design', code: 'CS305', start: 16, dur: 2, color: 'bg-[#0082C0]', text: 'text-white', room: '205', profAr: 'د. عمر', profEn: 'Dr. Omar', type: 'lec', mode: 'in-person', bldgAr: 'الحاسب', bldgEn: 'CS Bldg', collegeAr: 'الحاسب', collegeEn: 'CS' } ],
+                day3: [],
+                day4: []
+            };
+
+            const [schedule] = useFirebaseData('schedule', defaultSchedule);
+            const [selectedLecture, setSelectedLecture] = useState(null);
+            
+            const formatTimeRange = (start, dur) => {
+                const endHour = start + dur - 1;
+                return isAr ? `${endHour < 10 ? `0${endHour}` : endHour}:50 - ${start < 10 ? `0${start}` : start}:00` : `${start < 10 ? `0${start}` : start}:00 - ${endHour < 10 ? `0${endHour}` : endHour}:50`;
+            };
+
             return (
                 <div className="animate-fade-in space-y-6 relative h-full">
-                    <HeaderPage title={t.schedule} onBack={onBack} lang={lang} />
+                    <HeaderPage title={t.schedule} onBack={onBack} lang={lang} extra={<button className="hidden md:flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-teal-700 transition"><Printer size={16}/> {t.print}</button>} />
+                    
+                    {selectedLecture && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setSelectedLecture(null)}>
+                            <div className="bg-white dark:bg-dark-card w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700 transform transition-all scale-100 flex flex-col" onClick={e => e.stopPropagation()}>
+                                <div className={`h-32 ${selectedLecture.color} relative flex flex-col items-center justify-center text-white`}><button onClick={() => setSelectedLecture(null)} className="absolute top-4 right-4 bg-black/20 text-white p-2 rounded-full hover:bg-black/40 transition z-10"><X size={20}/></button><h3 className="text-2xl font-bold shadow-sm mt-2 relative z-10">{isAr ? selectedLecture.nameAr : selectedLecture.nameEn}</h3><span className="text-sm font-mono opacity-90 bg-white/20 px-3 py-1 rounded-full mt-2 relative z-10 backdrop-blur-sm">{selectedLecture.code}</span></div>
+                                <div className="p-6 space-y-4">
+                                    <div className="flex items-center gap-4 p-3"><div className="p-3 bg-blue-50 text-blue-600 rounded-full"><Clock size={20}/></div><div><p className="font-bold text-gray-800 dark:text-white dir-ltr">{formatTimeRange(selectedLecture.start, selectedLecture.dur)}</p></div></div>
+                                    <div className="flex items-center gap-4 p-3"><div className="p-3 bg-purple-50 text-purple-600 rounded-full"><MapPin size={20}/></div><div><p className="font-bold text-gray-800 dark:text-white text-sm">{isAr ? selectedLecture.bldgAr : selectedLecture.bldgEn}</p><p className="text-xs text-gray-500 mt-0.5 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded w-fit">{selectedLecture.room}</p></div></div>
+                                    <div className="flex items-center gap-4 p-3"><div className="p-3 bg-teal-50 text-teal-600 rounded-full"><User size={20}/></div><div className="flex-1"><p className="font-bold text-gray-800 dark:text-white">{isAr ? selectedLecture.profAr : selectedLecture.profEn}</p></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto shadow-sm">
                         <table className="w-full min-w-[800px] text-center table-fixed border-collapse">
                             <thead className="bg-white dark:bg-dark-card text-gray-800 dark:text-white border-b border-gray-200 dark:border-gray-700">
-                                <tr><th className="py-4 w-28 border-l border-gray-200 dark:border-gray-700"></th>{weekDaysLabels.map(day => (<th key={day} className="py-4 border-l border-gray-200 dark:border-gray-700 text-sm font-bold">{day}</th>))}</tr>
+                                <tr><th className="py-4 w-28 border-l border-gray-200 dark:border-gray-700"></th> {weekDays.map(day => (<th key={day} className="py-4 border-l border-gray-200 dark:border-gray-700 text-sm font-bold">{displayDays[day]}</th>))}</tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                 {timeSlots.map((slot) => (
                                     <tr key={slot.hour} className="h-24">
                                         <td className="p-2 bg-white dark:bg-dark-card text-gray-600 dark:text-gray-400 text-xs font-bold border-l border-gray-200 dark:border-gray-700 font-mono align-top pt-8">{slot.label}</td>
-                                        {weekDaysKey.map((dayKey, dayIdx) => {
-                                            const lecture = schedule[dayKey]?.find(l => l.start === slot.hour);
-                                            if (lecture) return (
-                                                <td key={dayIdx} rowSpan={lecture.dur} className="p-1 relative align-top h-full border-l border-gray-100 dark:border-gray-700/50">
-                                                    <div className={`w-full h-full rounded-lg ${lecture.color} ${lecture.text} flex flex-col items-center justify-center p-2`}><span className="font-bold text-sm leading-tight">{isAr ? lecture.nameAr : lecture.nameEn}</span></div>
-                                                </td>
-                                            );
+                                        {weekDays.map((day, dayIdx) => {
+                                            const lecture = schedule?.[day]?.find(l => l.start === slot.hour);
+                                            const isOccupied = schedule?.[day]?.some(l => slot.hour > l.start && slot.hour < l.start + l.dur);
+                                            if (lecture) {
+                                                return (<td key={dayIdx} rowSpan={lecture.dur} className="p-1 relative align-top h-full border-l border-gray-100 dark:border-gray-700/50"><button onClick={() => setSelectedLecture(lecture)} className={`w-full h-full rounded-lg ${lecture.color} ${lecture.text} flex flex-col items-center justify-center text-center shadow-sm hover:opacity-90 transition-opacity p-2 relative group`}><div className="flex flex-col items-center justify-center h-full w-full gap-1"><span className="font-bold text-base leading-tight">{isAr ? lecture.nameAr : lecture.nameEn}</span><span className="text-sm opacity-90 font-mono bg-black/10 px-1.5 rounded text-[10px]">{lecture.code}</span><span className="text-[10px] font-bold opacity-80 mt-1 dir-ltr font-mono tracking-wide">{formatTimeRange(lecture.start, lecture.dur)}</span></div></button></td>);
+                                            }
+                                            if (isOccupied) return null;
                                             return <td key={dayIdx} className="border-l border-gray-100 dark:border-gray-700/50"></td>
                                         })}
                                     </tr>
@@ -644,79 +577,76 @@
 
         const PlanPage = ({ onBack, t, lang }) => {
             const isAr = lang === 'ar';
+            const defaultLevels = [
+                { id: 1, courses: [ { code: 'MATH101', nameAr: 'تفاضل وتكامل 1', nameEn: 'Calculus 1', status: 'eq', grade: 'EQ', hours: 4 }, { code: 'CS100', nameAr: 'مهارات حاسب', nameEn: 'Computer Skills', status: 'done', grade: 'A+', hours: 2 } ] },
+                { id: 2, courses: [ { code: 'CS101', nameAr: 'مقدمة في البرمجة', nameEn: 'Intro to Programming', status: 'done', grade: 'B+', hours: 4, pre: 'CS100' } ] },
+                { id: 3, courses: [ { code: 'CS201', nameAr: 'برمجة 1', nameEn: 'Programming 1', status: 'done', grade: 'A+', pre: 'CS101', hours: 4 } ] },
+                { id: 4, courses: [ { code: 'CS204', nameAr: 'برمجة 2', nameEn: 'Programming 2', status: 'now', grade: '---', pre: 'CS201', hours: 4 } ] }
+            ];
+            const [levels] = useFirebaseData('planLevels', defaultLevels);
+            
+            const totalPlanHours = levels?.reduce((acc, lvl) => acc + lvl.courses.reduce((sum, c) => sum + c.hours, 0), 0) || 0;
+            
             return (
                 <div className="animate-fade-in space-y-6">
-                    <HeaderPage title={t.plan} onBack={onBack} lang={lang} />
-                    <div className="bg-white dark:bg-dark-card p-10 rounded-2xl text-center text-gray-500 border border-gray-200 dark:border-gray-700">
-                        الخطة الدراسية (محتوى تجريبي)
+                    <HeaderPage title={t.plan} onBack={onBack} lang={lang} extra={<div className="bg-primary/10 text-primary px-3 py-1 rounded-lg text-sm font-bold border border-primary/20">{totalPlanHours} Hrs</div>} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {levels?.map((lvl) => {
+                            const isLevelCompleted = lvl.courses.every(c => c.status === 'done' || c.status === 'eq');
+                            const levelHours = lvl.courses.reduce((sum, c) => sum + c.hours, 0);
+                            return (
+                                <div key={lvl.id} className={`rounded-xl border overflow-hidden shadow-sm transition-all ${isLevelCompleted ? 'border-green-300 dark:border-green-800' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-dark-card'}`}>
+                                    <div className={`p-3 border-b flex justify-between items-center ${isLevelCompleted ? 'bg-green-600 text-white border-green-700' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white'}`}>
+                                        <h3 className="font-bold text-sm flex items-center gap-2">{isLevelCompleted ? <CheckCircle2 size={16} className="text-white"/> : <span className="w-4 h-4 rounded-full border-2 border-current opacity-50"></span>} Level {lvl.id}</h3>
+                                        <div className="flex gap-2 text-[10px]"><span className={`px-2 py-0.5 rounded ${isLevelCompleted ? 'bg-green-500 text-white' : 'bg-white border'}`}>{lvl.courses.length} courses</span></div>
+                                    </div>
+                                    <div className={`divide-y ${isLevelCompleted ? 'divide-green-100 bg-green-50' : 'divide-gray-100'}`}>
+                                        {lvl.courses.map((course, i) => {
+                                            const isDone = course.status === 'done' || course.status === 'eq';
+                                            return (
+                                                <div key={i} className={`p-3 transition relative group ${isDone ? 'bg-green-50/50' : 'bg-white'}`}>
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="flex items-center gap-3"><div className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold shadow-sm ${isDone ? 'bg-green-100 text-green-700' : 'bg-gray-50 text-gray-400'}`}>{isDone ? <Check size={16}/> : <Lock size={16}/>}</div><div><div className={`font-bold text-sm ${isDone ? 'text-gray-800' : 'text-gray-600'}`}>{isAr ? course.nameAr : course.nameEn}</div><div className="flex items-center gap-2 mt-0.5"><span className="text-[10px] font-mono bg-gray-100 px-1.5 py-0.5 rounded">{course.code}</span><span className="text-[10px] font-bold text-primary">{course.hours} Hrs</span></div></div></div>
+                                                        <div className={`text-xs font-bold px-2 py-1 rounded ${isDone ? 'text-green-700 bg-green-100' : 'text-gray-300'}`}>{course.grade || '--'}</div>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            )
+                        })}
                     </div>
                 </div>
             );
         };
 
-        const ResultsPage = ({ onBack, t, lang }) => {
+        const ResultsPage = ({ onBack, t, lang, onOpenNotifications }) => {
             const isAr = lang === 'ar';
+            const defaultGpaTrend = [ { semAr: 'المستوى 1', semEn: 'Level 1', gpa: 3.50 }, { semAr: 'المستوى 2', semEn: 'Level 2', gpa: 3.65 }, { semAr: 'الحالي', semEn: 'Current', gpa: 3.35 } ];
+            const defaultDetailedResults = [
+                { code: 'SE301', nameAr: 'هندسة برمجيات', nameEn: 'Software Eng.', total: 95, grade: 'أ+', components: [ { labelAr: 'النصفي', labelEn: 'Midterm', max: 20, student: 18, avg: 14 } ] },
+                { code: 'CS305', nameAr: 'نظم تشغيل', nameEn: 'OS', total: 0, grade: 'NR', isPending: true, components: [ { labelAr: 'النصفي', labelEn: 'Midterm', max: 20, student: 14, avg: 15 } ] }
+            ];
+
+            const [gpaTrend] = useFirebaseData('gpaTrend', defaultGpaTrend);
+            const [detailedResults] = useFirebaseData('detailedResults', defaultDetailedResults);
+
+            const getScoreColor = (score, max) => { const pct = (score / max) * 100; if (pct >= 90) return 'bg-emerald-600 text-emerald-100'; return 'bg-red-500 text-white'; };
+            
             return (
                 <div className="animate-fade-in space-y-6">
-                    <HeaderPage title={t.results} onBack={onBack} lang={lang} />
-                    <div className="bg-white dark:bg-dark-card p-10 rounded-2xl text-center text-gray-500 border border-gray-200 dark:border-gray-700">
-                        النتائج (محتوى تجريبي)
+                    <HeaderPage title={t.results} onBack={onBack} lang={lang} extra={<div className="flex gap-2"><NotificationBell onClick={onOpenNotifications} /><button className="text-primary hover:bg-primary/10 p-2 rounded-lg transition"><Download size={20}/></button></div>} />
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="bg-gradient-to-br from-primary to-teal-800 p-6 rounded-2xl text-white shadow-lg relative overflow-hidden flex flex-col justify-center"><div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-10 translate-x-10"></div><div className="text-sm opacity-80 mb-2 font-medium">GPA</div><div className="flex items-end gap-3"><span className="text-6xl font-bold tracking-tight">3.35</span><span className="text-xl opacity-70 mb-2">/ 4.00</span></div></div>
+                        <div className="lg:col-span-2 bg-white dark:bg-dark-card p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col"><h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-6 flex items-center gap-2"><TrendingUp size={16} className="text-primary"/> GPA Trend</h3><div className="flex-1 w-full text-center py-10 text-gray-400 font-mono">Chart Data Synced with Firebase!</div></div>
                     </div>
-                </div>
-            );
-        };
-
-        const ExamsPage = ({ onBack, lang }) => {
-            const isAr = lang === 'ar';
-            return (
-                <div className="animate-fade-in space-y-6">
-                    <HeaderPage title={isAr ? "جدول الاختبارات" : "Exams"} onBack={onBack} lang={lang} />
-                    <div className="bg-white dark:bg-dark-card p-10 rounded-2xl text-center text-gray-500 border border-gray-200 dark:border-gray-700">
-                        جدول الاختبارات (محتوى تجريبي)
-                    </div>
-                </div>
-            );
-        };
-
-        const AbsencesPage = ({ onBack, lang }) => {
-            const isAr = lang === 'ar';
-            return (
-                <div className="animate-fade-in space-y-6">
-                    <HeaderPage title={isAr ? "الغيابات" : "Absences"} onBack={onBack} lang={lang} />
-                    <div className="bg-white dark:bg-dark-card p-10 rounded-2xl text-center text-gray-500 border border-gray-200 dark:border-gray-700">
-                        الغيابات (محتوى تجريبي)
-                    </div>
-                </div>
-            );
-        };
-
-        const AcademicRecordPage = ({ onBack, lang, t }) => {
-            const isAr = lang === 'ar';
-            return (
-                <div className="animate-fade-in space-y-6">
-                    <HeaderPage title={t.record} onBack={onBack} lang={lang} />
-                    <div className="bg-white dark:bg-dark-card p-10 rounded-2xl text-center text-gray-500 border border-gray-200 dark:border-gray-700">
-                        السجل الأكاديمي (محتوى تجريبي)
-                    </div>
-                </div>
-            );
-        };
-
-        const AddDropPage = ({ onBack, lang }) => {
-            const isAr = lang === 'ar';
-            const { data, updateData } = useContext(AppContext);
-            const t = { title: isAr ? "التسجيل الإلكتروني (الحذف والإضافة)" : "E-Registration", noReg: isAr ? "لا يوجد مقررات مسجلة" : "No registered courses" };
-            const enrolled = data.enrolledCourses || [];
-
-            return (
-                <div className="animate-fade-in space-y-6">
-                    <HeaderPage title={t.title} onBack={onBack} lang={lang} />
-                    <div className="bg-white dark:bg-dark-card rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
-                        <div className="space-y-3">
-                            {enrolled.length === 0 ? <p className="text-center text-gray-400 py-4 text-sm">{t.noReg}</p> : enrolled.map(c => (
-                                <div key={c.id} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
-                                    <div className="font-bold text-gray-800 dark:text-white">{isAr ? c.nameAr : c.nameEn}</div>
-                                    <span className="text-xs text-gray-500">{c.code}</span>
+                    <div className="space-y-4">
+                        <h3 className={`font-bold text-gray-800 dark:text-white text-lg border-primary ${isAr ? 'border-r-4 pr-3' : 'border-l-4 pl-3'}`}>Details</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {detailedResults?.map((course, idx) => (
+                                <div key={idx} className={`bg-white dark:bg-dark-card rounded-xl border shadow-sm overflow-hidden flex flex-col ${course.isPending ? 'border-amber-300' : 'border-gray-200'}`}>
+                                    <div className={`p-4 border-b flex justify-between items-start ${course.isPending ? 'bg-amber-50' : 'bg-gray-50'}`}><div><h4 className="font-bold text-sm">{isAr ? course.nameAr : course.nameEn}</h4><span className="text-[10px] font-mono border px-1.5 py-0.5 rounded mt-1 inline-block">{course.code}</span></div><div className="text-center">{course.isPending ? <div className="text-amber-600 font-bold text-xs">Pending</div> : <div className={`text-xl font-bold text-emerald-700`}>{course.total}</div>}</div></div>
                                 </div>
                             ))}
                         </div>
@@ -725,182 +655,233 @@
             );
         };
 
-        const OfferedCoursesPage = ({ onBack, lang }) => {
+        const ExamsPage = ({ onBack, lang }) => {
             const isAr = lang === 'ar';
+            const defaultExams = [ { id: 1, nameAr: 'أمن المعلومات', nameEn: 'Info Security', code: 'CS320', date: '2024-05-15', time: '09:00 - 11:00', roomAr: 'قاعة أ', roomEn: 'Hall A', status: 'upcoming' } ];
+            const [exams] = useFirebaseData('finalExams', defaultExams);
+            
+            return (
+                <div className="animate-fade-in space-y-6">
+                    <HeaderPage title={isAr ? "جدول الاختبارات" : "Exams"} onBack={onBack} lang={lang} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {exams?.map((exam) => (
+                            <button key={exam.id} className={`group relative bg-white dark:bg-dark-card border border-gray-200 dark:border-gray-700 rounded-2xl p-5 hover:border-primary transition-all ${isAr ? 'text-right' : 'text-left'} flex items-stretch overflow-hidden`}>
+                                <div className={`flex flex-col items-center justify-center ${isAr ? 'pl-4 border-l' : 'pr-4 border-r'} border-gray-100 min-w-[80px]`}><span className="text-3xl font-bold font-mono">{exam.date.split('-')[2]}</span></div>
+                                <div className={`flex-1 ${isAr ? 'pr-4' : 'pl-4'} py-1`}><div className="flex justify-between items-start mb-2"><div><h3 className="font-bold text-lg">{isAr ? exam.nameAr : exam.nameEn}</h3><span className="text-xs font-mono text-gray-400 bg-gray-100 px-2 py-0.5 rounded">{exam.code}</span></div></div><div className="flex items-center gap-4 text-xs text-gray-500 mt-3"><span className="flex items-center gap-1.5"><Clock size={14}/> {exam.time}</span><span className="flex items-center gap-1.5"><MapPin size={14}/> {isAr ? exam.roomAr : exam.roomEn}</span></div></div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const AbsencesPage = ({ onBack, lang }) => {
+            const isAr = lang === 'ar';
+            const defaultCourses = [ { nameAr: 'برمجة متقدمة', nameEn: 'Adv Programming', code: 'CS204', absencePct: 12, totalHours: 48, absentHours: 4, records: [] } ];
+            const [courses] = useFirebaseData('absenceRecords', defaultCourses);
+
+            return (
+                <div className="animate-fade-in space-y-6">
+                    <HeaderPage title={isAr ? "الغيابات" : "Absences"} onBack={onBack} lang={lang} />
+                    <div className="grid grid-cols-1 gap-6">
+                        {courses?.map((course, idx) => (
+                            <div key={idx} className="bg-white dark:bg-dark-card rounded-2xl border border-gray-200 shadow-sm overflow-hidden p-6"><div className="flex justify-between items-center mb-4"><div><h3 className="font-bold text-lg flex items-center gap-2">{isAr ? course.nameAr : course.nameEn}<span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full font-mono">{course.code}</span></h3></div><div className="text-left"><span className={`text-xl font-bold font-mono`}>{course.absencePct}%</span></div></div></div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const AcademicRecordPage = ({ onBack, lang, t, onOpenNotifications }) => {
+            const isAr = lang === 'ar';
+            const defaultRecordData = {
+                student: defaultStudentData,
+                semesters: [ { termAr: "الفصل الأول 1445", termEn: "1st Sem 1445", gpaSem: 3.15, gpaCum: 3.35, courses: [ { code: "SE301", nameAr: "هندسة برمجيات", nameEn: "Software Eng", hours: 3, earned: 3, grade: "أ+", points: "95" } ] } ]
+            };
+            const [recordData] = useFirebaseData('academicRecord', defaultRecordData);
+
+            return (
+                <div className="animate-fade-in space-y-6">
+                    <HeaderPage title={isAr ? "السجل الأكاديمي" : "Academic Record"} onBack={onBack} lang={lang} extra={<NotificationBell onClick={onOpenNotifications}/>} />
+                    {recordData?.semesters?.map((sem, idx) => (
+                        <div key={idx} className="bg-white rounded-2xl border p-4 mb-4"><h3 className="font-bold text-primary mb-4">{isAr ? sem.termAr : sem.termEn}</h3><table className="w-full text-right text-sm"><thead className="bg-gray-50 text-gray-500"><tr><th className="p-3">Code</th><th className="p-3">Course</th><th className="p-3">Grade</th></tr></thead><tbody>{sem.courses.map((c, i) => (<tr key={i}><td className="p-3 font-mono">{c.code}</td><td className="p-3 font-bold">{isAr ? c.nameAr : c.nameEn}</td><td className="p-3 font-bold text-green-600">{c.grade}</td></tr>))}</tbody></table></div>
+                    ))}
+                </div>
+            );
+        };
+
+        const AddDropPage = ({ onBack, lang }) => {
+            const isAr = lang === 'ar';
+            const defaultAvail = [ { code: 'PHYS101', nameAr: 'فيزياء عامة', nameEn: 'General Physics', hours: 4, sections: [ { id: 's1', section: '302', profAr: 'د. سامي', profEn: 'Dr. Sami', time: '10:00 - 11:50', status: 'open' } ] } ];
+            const defaultEnrolled = [ { id: 1, code: 'CS101', nameAr: 'مقدمة برمجة', nameEn: 'Intro to Prog', hours: 3, section: '201', time: '08:00 - 08:50' } ];
+            
+            const [availableCourses] = useFirebaseData('availableCourses', defaultAvail);
+            const [enrolled, setEnrolled] = useFirebaseData('enrolledCourses', defaultEnrolled);
+            const [filterTime, setFilterTime] = useState('');
+
+            const filteredAvailable = availableCourses?.filter(c => !filterTime || c.sections.some(s => s.time.includes(filterTime)));
+
+            const handleDrop = (c) => setEnrolled(enrolled.filter(item => item.id !== c.id));
+            const handleAdd = (c) => setEnrolled([...enrolled, { ...c, id: Date.now() }]);
+
+            return (
+                <div className="animate-fade-in space-y-6 relative">
+                    <HeaderPage title={isAr ? "الحذف والإضافة" : "Add/Drop"} onBack={onBack} lang={lang} />
+                    <div className="grid grid-cols-1 gap-6">
+                        <div className="bg-white rounded-2xl border p-5"><h3 className="font-bold mb-4">{isAr ? "المسجل" : "Enrolled"}</h3><div className="space-y-3">{enrolled?.map(c => (<div key={c.id} className="flex justify-between items-center p-3 bg-gray-50 border rounded-xl"><div><div className="font-bold">{isAr ? c.nameAr : c.nameEn}</div><div className="text-xs text-gray-500 font-mono">{c.code} - {c.time}</div></div><button onClick={() => handleDrop(c)} className="p-2 bg-red-50 text-red-600 rounded-lg"><LogOut size={18}/></button></div>))}</div></div>
+                        <div className="bg-white rounded-2xl border p-5"><h3 className="font-bold mb-4">{isAr ? "المطروح" : "Available"}</h3><div className="space-y-3">{filteredAvailable?.map(c => (<div key={c.code} className="flex justify-between items-center p-4 border rounded-xl hover:border-primary"><div><div className="font-bold">{isAr ? c.nameAr : c.nameEn}</div><div className="text-xs text-gray-500 font-mono">{c.code}</div></div><button onClick={() => handleAdd(c)} className="px-4 py-2 bg-primary text-white rounded-lg text-xs font-bold"><PlusCircle size={16}/></button></div>))}</div></div>
+                    </div>
+                </div>
+            );
+        };
+
+        const OfferedCoursesPage = ({ onBack, lang }) => {
+            const [searchTerm, setSearchTerm] = useState('');
+            const isAr = lang === 'ar';
+            const defaultOffered = [ { code: 'MATH101', nameAr: 'تفاضل 1', nameEn: 'Calc 1', sections: [ { section: '101', status: 'open' } ] } ];
+            const [courses] = useFirebaseData('offeredCoursesSearch', defaultOffered);
+            const filtered = courses?.filter(c => c.code.includes(searchTerm.toUpperCase()));
+
             return (
                 <div className="animate-fade-in space-y-6">
                     <HeaderPage title={isAr ? "المقررات المطروحة" : "Offered Courses"} onBack={onBack} lang={lang} />
-                    <div className="bg-white dark:bg-dark-card p-10 rounded-2xl text-center text-gray-500 border border-gray-200 dark:border-gray-700">محتوى تجريبي</div>
+                    <input type="text" placeholder="Search..." className="w-full p-4 rounded-xl border" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                    <div className="grid gap-3">{filtered?.map(c => (<div key={c.code} className="bg-white p-4 rounded-xl border flex justify-between"><div><h4 className="font-bold">{isAr ? c.nameAr : c.nameEn}</h4><span className="font-mono">{c.code}</span></div></div>))}</div>
                 </div>
             );
         };
 
         const DepartmentRequestPage = ({ onBack, type, lang }) => {
             const isAr = lang === 'ar';
+            const [deptReqs, setDeptReqs] = useFirebaseData('departmentRequests', []);
+            const [submitted, setSubmitted] = useState(false);
+            
+            const handleSubmit = () => { setDeptReqs([...(deptReqs||[]), { id: Date.now(), type, date: new Date().toISOString() }]); setSubmitted(true); };
+            
+            if(submitted) return (<div className="text-center py-20"><div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6"><Check size={40}/></div><h3 className="text-2xl font-bold mb-2">Success</h3><button onClick={onBack} className="bg-gray-100 px-6 py-2 rounded-lg font-bold mt-4">Back</button></div>);
+
             return (
                 <div className="animate-fade-in space-y-6">
-                    <HeaderPage title={isAr ? "طلب من القسم" : "Dept Request"} onBack={onBack} lang={lang} />
-                    <div className="bg-white dark:bg-dark-card p-10 rounded-2xl text-center text-gray-500 border border-gray-200 dark:border-gray-700">محتوى تجريبي</div>
+                    <HeaderPage title={type} onBack={onBack} lang={lang} />
+                    <div className="bg-white p-6 rounded-2xl border"><button onClick={handleSubmit} className="w-full font-bold py-3 rounded-xl bg-primary text-white">Submit Request</button></div>
                 </div>
             );
         };
 
         const MultiRequestPage = ({ onBack, lang }) => {
-            const isAr = lang === 'ar';
+            const [multiReqs, setMultiReqs] = useFirebaseData('multiRequests', []);
+            const [submitted, setSubmitted] = useState(false);
+            
+            if(submitted) return <div className="text-center py-20"><h3 className="text-2xl font-bold">Success</h3><button onClick={onBack} className="mt-4 bg-gray-200 px-4 py-2 rounded">Back</button></div>;
             return (
-                <div className="animate-fade-in space-y-6">
-                    <HeaderPage title={isAr ? "طلب مزدوج" : "Multi Request"} onBack={onBack} lang={lang} />
-                    <div className="bg-white dark:bg-dark-card p-10 rounded-2xl text-center text-gray-500 border border-gray-200 dark:border-gray-700">محتوى تجريبي</div>
-                </div>
+                <div className="animate-fade-in space-y-6"><HeaderPage title="Multi-Request" onBack={onBack} lang={lang}/><button onClick={() => { setMultiReqs([...(multiReqs||[]), { id: Date.now(), date: new Date().toISOString() }]); setSubmitted(true); }} className="w-full bg-primary text-white py-3 rounded-xl font-bold">Submit Combo</button></div>
             );
         };
 
         const RegistrationRequestsPage = ({ onBack, lang }) => {
-            const isAr = lang === 'ar';
+            const [reqs] = useFirebaseData('registrationRequests', [ { id: 501, typeKey: 'add', date: '2024-05-10', status: 'pending', course: 'CS302' } ]);
             return (
-                <div className="animate-fade-in space-y-6">
-                    <HeaderPage title={isAr ? "طلبات التسجيل" : "Reg Requests"} onBack={onBack} lang={lang} />
-                    <div className="bg-white dark:bg-dark-card p-10 rounded-2xl text-center text-gray-500 border border-gray-200 dark:border-gray-700">محتوى تجريبي</div>
-                </div>
-            );
-        };
-
-        const WithdrawPage = ({ onBack, lang }) => {
-            const isAr = lang === 'ar';
-            return (
-                <div className="animate-fade-in space-y-6">
-                    <HeaderPage title={isAr ? "انسحاب" : "Withdraw"} onBack={onBack} lang={lang} />
-                    <div className="bg-white dark:bg-dark-card p-10 rounded-2xl text-center text-gray-500 border border-gray-200 dark:border-gray-700">محتوى تجريبي</div>
-                </div>
-            );
-        };
-
-        const RegistrationPage = ({ onBack, lang }) => {
-            const isAr = lang === 'ar';
-            return (
-                <div className="animate-fade-in space-y-6">
-                    <HeaderPage title={isAr ? "التسجيل" : "Registration"} onBack={onBack} lang={lang} />
-                    <div className="bg-white dark:bg-dark-card p-10 rounded-2xl text-center text-gray-500 border border-gray-200 dark:border-gray-700">محتوى تجريبي</div>
-                </div>
+                <div className="animate-fade-in space-y-6"><HeaderPage title="Requests" onBack={onBack} lang={lang}/>{reqs?.map(r => <div key={r.id} className="bg-white p-4 border rounded-xl mb-3 font-mono">{r.course} - {r.status}</div>)}</div>
             );
         };
 
         const NewAcademicActionPage = ({ onBack, lang }) => {
-            const isAr = lang === 'ar';
-            return (
-                <div className="animate-fade-in space-y-6">
-                    <HeaderPage title={isAr ? "طلب حركة أكاديمية" : "New Action"} onBack={onBack} lang={lang} />
-                    <div className="bg-white dark:bg-dark-card p-10 rounded-2xl text-center text-gray-500 border border-gray-200 dark:border-gray-700">محتوى تجريبي</div>
-                </div>
-            );
+            const [actions, setActions] = useFirebaseData('academicActions', []);
+            const [submitted, setSubmitted] = useState(false);
+            if(submitted) return <div className="text-center py-20"><h3 className="text-2xl font-bold">Success</h3><button onClick={onBack} className="mt-4 bg-gray-200 px-4 py-2 rounded">Back</button></div>;
+            return <div className="animate-fade-in space-y-6"><HeaderPage title="New Action" onBack={onBack} lang={lang}/><button onClick={() => { setActions([{ id: Date.now(), type: 'apology', status: 'pending', date: new Date().toISOString() }, ...(actions||[])]); setSubmitted(true); }} className="w-full bg-primary text-white py-3 rounded-xl font-bold">Submit</button></div>;
         };
 
         const ViewAcademicActionsPage = ({ onBack, lang }) => {
-            const isAr = lang === 'ar';
-            return (
-                <div className="animate-fade-in space-y-6">
-                    <HeaderPage title={isAr ? "عرض الحركات" : "View Actions"} onBack={onBack} lang={lang} />
-                    <div className="bg-white dark:bg-dark-card p-10 rounded-2xl text-center text-gray-500 border border-gray-200 dark:border-gray-700">محتوى تجريبي</div>
-                </div>
-            );
+            const [actions] = useFirebaseData('academicActions', []);
+            return <div className="animate-fade-in space-y-6"><HeaderPage title="View Actions" onBack={onBack} lang={lang}/>{actions?.map(a => <div key={a.id} className="bg-white p-4 border rounded-xl mb-3">{a.type} - {a.status}</div>)}</div>;
         };
 
         const MajorChangeRequestPage = ({ onBack, lang }) => {
-            const isAr = lang === 'ar';
-            return (
-                <div className="animate-fade-in space-y-6">
-                    <HeaderPage title={isAr ? "تغيير تخصص" : "Change Major"} onBack={onBack} lang={lang} />
-                    <div className="bg-white dark:bg-dark-card p-10 rounded-2xl text-center text-gray-500 border border-gray-200 dark:border-gray-700">محتوى تجريبي</div>
-                </div>
-            );
+            const [reqs, setReqs] = useFirebaseData('majorChangeRequests', []);
+            const [submitted, setSubmitted] = useState(false);
+            if(submitted) return <div className="text-center py-20"><h3 className="text-2xl font-bold">Success</h3><button onClick={onBack} className="mt-4 bg-gray-200 px-4 py-2 rounded">Back</button></div>;
+            return <div className="animate-fade-in space-y-6"><HeaderPage title="Major Change" onBack={onBack} lang={lang}/><button onClick={() => { setReqs([{ id: Date.now(), target: 'CS', status: 'pending', date: new Date().toISOString() }, ...(reqs||[])]); setSubmitted(true); }} className="w-full bg-primary text-white py-3 rounded-xl font-bold">Submit</button></div>;
         };
 
         const ViewMajorChangeRequestsPage = ({ onBack, lang }) => {
-            const isAr = lang === 'ar';
-            return (
-                <div className="animate-fade-in space-y-6">
-                    <HeaderPage title={isAr ? "طلبات تغيير التخصص" : "View Major Change"} onBack={onBack} lang={lang} />
-                    <div className="bg-white dark:bg-dark-card p-10 rounded-2xl text-center text-gray-500 border border-gray-200 dark:border-gray-700">محتوى تجريبي</div>
-                </div>
-            );
+            const [reqs] = useFirebaseData('majorChangeRequests', []);
+            return <div className="animate-fade-in space-y-6"><HeaderPage title="View Major Changes" onBack={onBack} lang={lang}/>{reqs?.map(r => <div key={r.id} className="bg-white p-4 border rounded-xl mb-3">{r.target} - {r.status}</div>)}</div>;
         };
 
         const OfficeHoursBookPage = ({ onBack, lang }) => {
-            const isAr = lang === 'ar';
-            return (
-                <div className="animate-fade-in space-y-6">
-                    <HeaderPage title={isAr ? "حجز ساعات" : "Book Hours"} onBack={onBack} lang={lang} />
-                    <div className="bg-white dark:bg-dark-card p-10 rounded-2xl text-center text-gray-500 border border-gray-200 dark:border-gray-700">محتوى تجريبي</div>
-                </div>
-            );
+            const [appts, setAppts] = useFirebaseData('officeAppointments', []);
+            const [submitted, setSubmitted] = useState(false);
+            if(submitted) return <div className="text-center py-20"><h3 className="text-2xl font-bold">Success</h3><button onClick={onBack} className="mt-4 bg-gray-200 px-4 py-2 rounded">Back</button></div>;
+            return <div className="animate-fade-in space-y-6"><HeaderPage title="Book Office Hour" onBack={onBack} lang={lang}/><button onClick={() => { setAppts([{ id: Date.now(), prof: 'Dr. Test', status: 'pending', date: new Date().toISOString() }, ...(appts||[])]); setSubmitted(true); }} className="w-full bg-primary text-white py-3 rounded-xl font-bold">Book</button></div>;
         };
 
         const OfficeHoursViewPage = ({ onBack, lang }) => {
-            const isAr = lang === 'ar';
-            return (
-                <div className="animate-fade-in space-y-6">
-                    <HeaderPage title={isAr ? "مواعيدي" : "My Hours"} onBack={onBack} lang={lang} />
-                    <div className="bg-white dark:bg-dark-card p-10 rounded-2xl text-center text-gray-500 border border-gray-200 dark:border-gray-700">محتوى تجريبي</div>
-                </div>
-            );
+            const [appts] = useFirebaseData('officeAppointments', []);
+            return <div className="animate-fade-in space-y-6"><HeaderPage title="My Office Hours" onBack={onBack} lang={lang}/>{appts?.map(a => <div key={a.id} className="bg-white p-4 border rounded-xl mb-3">{a.prof} - {a.status}</div>)}</div>;
         };
 
         const NewRecommendationPage = ({ onBack, lang }) => {
-            const isAr = lang === 'ar';
-            return (
-                <div className="animate-fade-in space-y-6">
-                    <HeaderPage title={isAr ? "طلب توصية" : "New Recommendation"} onBack={onBack} lang={lang} />
-                    <div className="bg-white dark:bg-dark-card p-10 rounded-2xl text-center text-gray-500 border border-gray-200 dark:border-gray-700">محتوى تجريبي</div>
-                </div>
-            );
+            const [recs, setRecs] = useFirebaseData('recommendations', []);
+            const [submitted, setSubmitted] = useState(false);
+            if(submitted) return <div className="text-center py-20"><h3 className="text-2xl font-bold">Success</h3><button onClick={onBack} className="mt-4 bg-gray-200 px-4 py-2 rounded">Back</button></div>;
+            return <div className="animate-fade-in space-y-6"><HeaderPage title="Request Rec" onBack={onBack} lang={lang}/><button onClick={() => { setRecs([{ id: Date.now(), prof: 'Dr. Rec', status: 'pending', date: new Date().toISOString() }, ...(recs||[])]); setSubmitted(true); }} className="w-full bg-primary text-white py-3 rounded-xl font-bold">Submit</button></div>;
         };
 
         const ViewRecommendationsPage = ({ onBack, lang }) => {
-            const isAr = lang === 'ar';
-            return (
-                <div className="animate-fade-in space-y-6">
-                    <HeaderPage title={isAr ? "التوصيات" : "Recommendations"} onBack={onBack} lang={lang} />
-                    <div className="bg-white dark:bg-dark-card p-10 rounded-2xl text-center text-gray-500 border border-gray-200 dark:border-gray-700">محتوى تجريبي</div>
-                </div>
-            );
+            const [recs] = useFirebaseData('recommendations', []);
+            return <div className="animate-fade-in space-y-6"><HeaderPage title="View Recs" onBack={onBack} lang={lang}/>{recs?.map(r => <div key={r.id} className="bg-white p-4 border rounded-xl mb-3">{r.prof} - {r.status}</div>)}</div>;
+        };
+
+        const WithdrawPage = ({ onBack, lang }) => {
+            const [withdrawReqs, setWithdrawReqs] = useFirebaseData('withdrawRequests', []);
+            return <div className="animate-fade-in space-y-6"><HeaderPage title="Withdraw" onBack={onBack} lang={lang}/><button onClick={() => { setWithdrawReqs([{ id: Date.now(), course: 'MATH101', status: 'pending', date: new Date().toISOString() }, ...(withdrawReqs||[])]); alert("Done!"); }} className="w-full bg-red-600 text-white py-3 rounded-xl font-bold">Withdraw (Test)</button></div>;
         };
 
         const PersonalPage = ({ onBack, activeView, lang }) => {
-            const isAr = lang === 'ar';
-            return (
-                <div className="animate-fade-in space-y-6">
-                    <HeaderPage title={isAr ? "شخصي" : "Personal"} onBack={onBack} lang={lang} />
-                    <div className="bg-white dark:bg-dark-card p-10 rounded-2xl text-center text-gray-500 border border-gray-200 dark:border-gray-700">محتوى تجريبي - {activeView}</div>
-                </div>
-            );
+            const [rewardsHistory] = useFirebaseData('rewardsHistory', [ { id: 1, type: 'monthly', monthAr: 'شوال', monthEn: 'Shawwal', amount: '990', status: 'deposited', date: '1445/10/25' } ]);
+            return <div className="animate-fade-in space-y-6"><HeaderPage title={activeView} onBack={onBack} lang={lang}/><div className="bg-white p-4 border rounded-xl">{activeView === 'rewards' ? rewardsHistory?.map(r => <div key={r.id}>{r.amount} SAR</div>) : "Personal Details Synced!"}</div></div>;
         };
 
         const UserAccountPage = ({ onBack, lang }) => {
-            const isAr = lang === 'ar';
-            return (
-                <div className="animate-fade-in space-y-6">
-                    <HeaderPage title={isAr ? "حسابي" : "Account"} onBack={onBack} lang={lang} />
-                    <div className="bg-white dark:bg-dark-card p-10 rounded-2xl text-center text-gray-500 border border-gray-200 dark:border-gray-700">محتوى تجريبي</div>
-                </div>
-            );
+            const [user] = useFirebaseData('studentInfo', defaultStudentData);
+            return <div className="animate-fade-in space-y-6"><HeaderPage title="Account" onBack={onBack} lang={lang}/><div className="bg-white p-8 rounded-2xl border text-center"><h2 className="text-2xl font-bold">{lang === 'ar' ? user?.nameAr : user?.nameEn}</h2><p className="font-mono mt-2">{user?.email}</p></div></div>;
         };
 
+        // 19. الرئيسية (Home View)
         const HomeView = ({ t, openService, lang }) => {
             const isAr = lang === 'ar';
-            const { data } = useContext(AppContext);
-            const std = data.studentData || {};
-            const completed = std.completedHours || 0;
-            const current = std.currentHours || 0;
-            const remaining = (std.totalHours || 0) - (completed + current);
-            const total = std.totalHours || 1;
+            
+            const defaultUpcomingExams = [
+                { subjectAr: "التحليل الكيميائي", subjectEn: "Chemical Analysis", date: "2024-05-15", time: "09:00", roomAr: "109/ق6", roomEn: "109/C6", daysLeft: 2 },
+                { subjectAr: "الإحصاء العملي", subjectEn: "Practical Statistics", date: "2024-05-20", time: "10:30", roomAr: "معمل 2", roomEn: "Lab 2", daysLeft: 7 }
+            ];
+            
+            const defaultAttendanceData = [
+                { nameAr: 'برمجة متقدمة', nameEn: 'Advanced Programming', absencePct: 0, excused: false },      
+                { nameAr: 'تحليل كيميائي', nameEn: 'Chemical Analysis', absencePct: 12, excused: false },    
+                { nameAr: 'إحصاء هندسي', nameEn: 'Engineering Statistics', absencePct: 20, excused: true },       
+                { nameAr: 'فيزياء عامة', nameEn: 'General Physics', absencePct: 16, excused: false }
+            ];
+
+            const [student] = useFirebaseData('studentInfo', defaultStudentData);
+            const [upcomingExams] = useFirebaseData('upcomingExams', defaultUpcomingExams);
+            const [attendanceData] = useFirebaseData('attendanceOverview', defaultAttendanceData);
+
+            const completed = student?.completedHours || 0;
+            const current = student?.currentHours || 0;
+            const total = student?.totalHours || 120;
+            const remaining = total - (completed + current);
             const completedPct = (completed / total) * 100;
             const currentPct = (current / total) * 100;
 
-            const upcomingExams = data.exams || [];
-            const attendanceData = data.attendanceStats || [];
-
             return (
                 <div className="space-y-8 animate-fade-in">
+                    <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 p-4 rounded-r-xl shadow-sm flex items-start gap-4">
+                        <div className="p-2.5 bg-amber-100 dark:bg-amber-800 rounded-full text-amber-600 dark:text-amber-200 shrink-0"><Bell size={24} className="animate-pulse"/></div>
+                        <div className="flex-1"><h4 className="font-bold text-amber-800 dark:text-amber-100 text-sm md:text-base">{t.notificationTitle}</h4><p className="text-xs md:text-sm text-amber-700 dark:text-amber-200 mt-1 leading-relaxed font-medium">{t.notificationBody}</p></div>
+                    </div>
+
                     <div>
                         <h3 className="text-sm font-bold text-gray-400 uppercase mb-4 tracking-wider flex items-center gap-2"><div className="w-1 h-4 bg-primary rounded-full"></div> {t.quickActions}</h3>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -914,7 +895,7 @@
                         <div className="lg:col-span-2 bg-primary rounded-2xl p-8 text-white shadow-xl relative overflow-hidden group flex flex-col justify-between">
                             <div className="absolute top-0 right-0 w-full h-full opacity-[0.07] bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')]"></div>
                             <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
-                                <div><div className="inline-flex items-center gap-2 bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-teal-100 mb-4 border border-white/10"><TrendingUp size={14} className="text-gold" /> <span>{isAr ? std.typeAr : std.typeEn}</span></div><h2 className="text-6xl font-bold text-white mb-2 tracking-tighter">{std.gpa}</h2> <p className="text-teal-100 text-lg opacity-90">{t.gpa}</p></div>
+                                <div><div className="inline-flex items-center gap-2 bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-teal-100 mb-4 border border-white/10"><TrendingUp size={14} className="text-gold" /> <span>{t.statusRegular}</span></div><h2 className="text-6xl font-bold text-white mb-2 tracking-tighter">{student?.gpa}</h2> <p className="text-teal-100 text-lg opacity-90">{t.gpa}</p></div>
                                 <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10 text-center min-w-[100px]"><span className="block text-3xl font-bold text-gold">{total}</span><span className="text-xs text-teal-100">{t['total-hours-label']}</span></div>
                             </div>
                             <div className="relative z-10 w-full">
@@ -937,11 +918,44 @@
                             </div>
                         </div>
                     </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className="bg-white dark:bg-dark-card p-5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+                            <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-gray-800 dark:text-white flex items-center gap-2"><span className="w-1 h-5 bg-primary rounded-full"></span>{t.upcomingExams}</h3><button onClick={() => openService('exams')} className="text-xs text-primary font-bold hover:bg-primary/5 px-2 py-1 rounded transition">{t['view-all']}</button></div>
+                            <div className="space-y-3">
+                                {upcomingExams?.map((exam, i) => (
+                                    <div key={i} className="flex gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 relative overflow-hidden">
+                                        {exam.daysLeft <= 3 && <div className="absolute top-0 right-0 w-1 h-full bg-red-500"></div>}
+                                        <div className="flex flex-col items-center justify-center bg-white dark:bg-gray-700 rounded shadow-sm w-12 h-12 border border-gray-100 dark:border-gray-600"><span className="text-[10px] text-gray-500 dark:text-gray-400 font-bold">{t['month-may']}</span><span className="text-base font-bold text-primary dark:text-teal-400 font-mono">{new Date(exam.date).getDate()}</span></div>
+                                        <div className="flex-1 py-0.5"><h4 className="font-bold text-gray-800 dark:text-gray-200 text-sm">{isAr ? exam.subjectAr : exam.subjectEn}</h4><div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400"><span className="flex items-center gap-1"><Clock size={12}/> {exam.time}</span><span className="flex items-center gap-1"><MapPin size={12}/> {isAr ? exam.roomAr : exam.roomEn}</span></div></div>
+                                        <span className={`self-start text-[10px] px-2 py-0.5 rounded-full font-bold ${exam.daysLeft <= 3 ? 'bg-red-100 text-red-600' : 'bg-blue-50 text-blue-600'}`}>{t.hoursRemaining} {exam.daysLeft} {t['days-label']}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-dark-card p-5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+                            <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-gray-800 dark:text-white flex items-center gap-2"><span className="w-1 h-5 bg-primary rounded-full"></span>{t.attendance}</h3><button onClick={() => openService('absences')} className="text-xs text-primary font-bold hover:bg-primary/5 px-2 py-1 rounded transition">{t['view-all']}</button></div>
+                             <div className="space-y-6">
+                                {attendanceData?.map((item, idx) => {
+                                    const progressPercent = Math.min((item.absencePct / 25) * 100, 100);
+                                    let statusColor = "bg-green-500", statusText = ""; 
+                                    if (item.absencePct === 0) { statusColor = "bg-emerald-500"; statusText = t['status-perfect']; } else if (item.absencePct < 10) { statusColor = "bg-green-500"; statusText = t['status-safe']; } else if (item.absencePct >= 10 && item.absencePct < 15) { statusColor = "bg-yellow-500"; statusText = t['status-warning']; } else if (item.absencePct >= 15) { if (item.excused) { statusColor = "bg-orange-400"; statusText = t['status-high-excused']; } else { statusColor = "bg-red-600"; statusText = t['status-denial']; } }
+                                    return (
+                                        <div key={idx} className="mb-2">
+                                            <div className="flex justify-between items-center mb-1"><span className="font-bold text-gray-700 dark:text-gray-300 text-sm">{isAr ? item.nameAr : item.nameEn}</span><div className="flex items-center gap-2">{statusText && (<span className={`text-[10px] px-2 py-0.5 rounded font-bold text-white shadow-sm ${statusColor}`}>{statusText}</span>)}<span className={`text-[10px] font-bold ${item.absencePct >= 15 && !item.excused ? 'text-red-500' : 'text-gray-500'}`}>{item.absencePct}%</span></div></div>
+                                            <div className="relative w-full h-10"><div className="absolute top-3 w-full h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-visible"><div className="absolute inset-0 rounded-full overflow-hidden"><div className={`h-full transition-all duration-1000 ${statusColor}`} style={{ width: `${progressPercent}%` }}></div></div><div className="absolute -top-1 bottom-0 w-0.5 bg-gray-300 dark:bg-gray-600 z-10" style={{ right: '60%' }}></div><div className="absolute top-4 text-[9px] font-bold text-gray-400 translate-x-1/2" style={{ right: '60%' }}>15%</div><div className="absolute -top-1 bottom-0 w-0.5 bg-red-300 dark:bg-red-800 z-10" style={{ right: '99%' }}></div><div className="absolute top-4 text-[9px] font-bold text-red-400 translate-x-full" style={{ right: '99%' }}>25%</div><div className="absolute top-4 text-[9px] text-gray-400" style={{ right: '0%' }}>0%</div></div></div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             );
         };
 
-        const MainApp = () => {
+        const App = () => {
             const [view, setView] = useState('home');
             const [activeCategory, setActiveCategory] = useState(null);
             const [darkMode, setDarkMode] = useState(false);
@@ -953,13 +967,14 @@
             const [reduceMotion, setReduceMotion] = useState(false);
             const [highlightLinks, setHighlightLinks] = useState(false);
 
-            const { data } = useContext(AppContext);
+            // Access global student data from Firebase to show in SideMenu
+            const [student] = useFirebaseData('studentInfo', defaultStudentData);
 
             useEffect(() => { document.documentElement.classList.toggle('dark', darkMode); }, [darkMode]);
             useEffect(() => { document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'; }, [lang]);
             useEffect(() => { document.documentElement.style.fontSize = `${zoomLevel}%`; }, [zoomLevel]);
-            useEffect(() => { if (reduceMotion) document.documentElement.classList.add('reduce-motion'); else document.documentElement.classList.remove('reduce-motion'); }, [reduceMotion]);
-            useEffect(() => { if (highlightLinks) document.documentElement.classList.add('highlight-links'); else document.documentElement.classList.remove('highlight-links'); }, [highlightLinks]);
+            useEffect(() => { reduceMotion ? document.documentElement.classList.add('reduce-motion') : document.documentElement.classList.remove('reduce-motion'); }, [reduceMotion]);
+            useEffect(() => { highlightLinks ? document.documentElement.classList.add('highlight-links') : document.documentElement.classList.remove('highlight-links'); }, [highlightLinks]);
 
             useEffect(() => {
                 const handleScreenClick = (e) => {
@@ -973,21 +988,19 @@
                         window.speechSynthesis.speak(utterance);
                     }
                 };
-                if (isReaderActive) document.addEventListener('click', handleScreenClick);
-                else window.speechSynthesis.cancel();
+                isReaderActive ? document.addEventListener('click', handleScreenClick) : window.speechSynthesis.cancel();
                 return () => document.removeEventListener('click', handleScreenClick);
             }, [isReaderActive, lang]);
 
-            const toggleSpeech = () => setIsReaderActive(!isReaderActive);
             const t = translations[lang];
             const isAr = lang === 'ar';
             const goHome = () => setView('home');
 
             const menuItems = [
-                { id: 'academic', icon: <GraduationCap size={20}/>, subItems: [{ id: 'schedule' }, { id: 'academic-events' }, { id: 'exams' }, { id: 'plan' }, { id: 'results' }, { id: 'absences' }, { id: 'record' }] },
-                { id: 'registration', icon: <CheckCircle2 size={20}/>, subItems: [{ id: 'offered-courses' }, { id: 'addDrop' }, { id: 'dept-add' }, { id: 'dept-change' }, { id: 'dept-drop' }, { id: 'dept-multi' }, { id: 'reg-requests' }, { id: 'withdraw' }] },
-                { id: 'requests', icon: <FileText size={20}/>, subItems: [{ id: 'academic-action-new' }, { id: 'academic-action-view' }, { id: 'major-change-new' }, { id: 'major-change-view' }, { id: 'recommendation-new' }, { id: 'recommendation-view' }, { id: 'office-hours-book' }, { id: 'office-hours-view' }] },
-                { id: 'personal', icon: <User size={20}/>, subItems: [{ id: 'penalties' }, { id: 'rewards' }, { id: 'finance' }, { id: 'docs' }, { id: 'allowances' }, { id: 'id-photo' } ] }
+                { id: 'academic', icon: <GraduationCap size={20}/>, subItems: [ { id: 'schedule' }, { id: 'academic-events' }, { id: 'exams' }, { id: 'plan' }, { id: 'results' }, { id: 'absences' }, { id: 'record' } ] },
+                { id: 'registration', icon: <CheckCircle2 size={20}/>, subItems: [ { id: 'offered-courses' }, { id: 'addDrop' }, { id: 'dept-add' }, { id: 'dept-change' }, { id: 'dept-drop' }, { id: 'dept-multi' }, { id: 'reg-requests' }, { id: 'withdraw' } ] },
+                { id: 'requests', icon: <FileText size={20}/>, subItems: [ { id: 'academic-action-new' }, { id: 'academic-action-view' }, { id: 'major-change-new' }, { id: 'major-change-view' }, { id: 'recommendation-new' }, { id: 'recommendation-view' }, { id: 'office-hours-book' }, { id: 'office-hours-view' } ] },
+                { id: 'personal', icon: <User size={20}/>, subItems: [ { id: 'penalties' }, { id: 'rewards' }, { id: 'finance' }, { id: 'docs' }, { id: 'allowances' }, { id: 'id-photo' } ] }
             ];
 
             const toggleCategory = (id) => setActiveCategory(activeCategory === id ? null : id);
@@ -996,12 +1009,13 @@
             const renderContent = () => {
                 switch(view) {
                     case 'student-dashboard': return <StudentDashboardPage onBack={goHome} lang={lang} />; 
-                    case 'notifications': return <NotificationsPage onBack={goHome} lang={lang} />; 
+                    case 'notifications': return <NotificationsPage onBack={goHome} lang={lang} />;
                     case 'academic-events': return <AcademicEventsPage onBack={goHome} lang={lang} />;
                     case 'schedule': return <SchedulePage onBack={goHome} t={t} lang={lang} />;
                     case 'plan': return <PlanPage onBack={goHome} t={t} lang={lang} />;
                     case 'results': return <ResultsPage onBack={goHome} t={t} lang={lang} onOpenNotifications={openNotifications} />;
                     case 'addDrop': return <AddDropPage onBack={goHome} lang={lang} />;
+                    
                     case 'offered-courses': return <OfferedCoursesPage onBack={goHome} lang={lang} />;
                     case 'dept-add': return <DepartmentRequestPage onBack={goHome} type="add" lang={lang} />;
                     case 'dept-change': return <DepartmentRequestPage onBack={goHome} type="change" lang={lang} />;
@@ -1009,25 +1023,28 @@
                     case 'dept-multi': return <MultiRequestPage onBack={goHome} lang={lang} />; 
                     case 'reg-requests': return <RegistrationRequestsPage onBack={goHome} lang={lang} />;
                     case 'withdraw': return <WithdrawPage onBack={goHome} lang={lang} />;
+
                     case 'exams': return <ExamsPage onBack={goHome} lang={lang} />;
                     case 'e-reg': return <RegistrationPage onBack={goHome} lang={lang} />;
                     case 'absences': return <AbsencesPage onBack={goHome} lang={lang} />;
                     case 'record': return <AcademicRecordPage onBack={goHome} lang={lang} t={t} onOpenNotifications={openNotifications} />; 
+                    
                     case 'academic-action-new': return <NewAcademicActionPage onBack={goHome} lang={lang} />;
                     case 'academic-action-view': return <ViewAcademicActionsPage onBack={goHome} lang={lang} />;
                     case 'major-change-new': return <MajorChangeRequestPage onBack={goHome} lang={lang} />;
                     case 'major-change-view': return <ViewMajorChangeRequestsPage onBack={goHome} lang={lang} />;
-                    case 'recommendation-new': return <NewRecommendationPage onBack={goHome} lang={lang} />; 
-                    case 'recommendation-view': return <ViewRecommendationsPage onBack={goHome} lang={lang} />; 
+                    case 'recommendation-new': return <NewRecommendationPage onBack={goHome} lang={lang} />;
+                    case 'recommendation-view': return <ViewRecommendationsPage onBack={goHome} lang={lang} />;
                     case 'office-hours-book': return <OfficeHoursBookPage onBack={goHome} lang={lang} />;
                     case 'office-hours-view': return <OfficeHoursViewPage onBack={goHome} lang={lang} />;
+
                     case 'id-photo': return <PersonalPage onBack={goHome} activeView="id-photo" lang={lang} />;
                     case 'finance': return <PersonalPage onBack={goHome} activeView="finance" lang={lang} />;
                     case 'rewards': return <PersonalPage onBack={goHome} activeView="rewards" lang={lang} />;
                     case 'penalties': return <PersonalPage onBack={goHome} activeView="penalties" lang={lang} />;
                     case 'allowances': return <PersonalPage onBack={goHome} activeView="allowances" lang={lang} />;
                     case 'docs': return <PersonalPage onBack={goHome} activeView="docs" lang={lang} />;
-                    case 'profile': return <PersonalPage onBack={goHome} activeView="id-photo" lang={lang} />; 
+                    case 'profile': return <PersonalPage onBack={goHome} activeView="id-photo" lang={lang} />;
                     case 'user-account': return <UserAccountPage onBack={goHome} lang={lang} />;
                     default: return <HomeView t={t} openService={setView} lang={lang} />;
                 }
@@ -1042,20 +1059,15 @@
                         </div>
                         
                         <div className="px-4 mb-4 space-y-2">
-                             <button onClick={() => setView('home')} className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg text-sm font-bold transition-all ${view === 'home' ? 'bg-primary text-white shadow-md' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'}`}>
-                                <LayoutDashboard size={20}/> {t.dashboard}
-                            </button>
-                             <button onClick={() => setView('student-dashboard')} className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg text-sm font-bold transition-all ${view === 'student-dashboard' ? 'bg-primary text-white shadow-md' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'}`}>
-                                <PieChart size={20}/> {t['student-dashboard']}
-                            </button>
+                             <button onClick={() => setView('home')} className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg text-sm font-bold transition-all ${view === 'home' ? 'bg-primary text-white shadow-md' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'}`}><LayoutDashboard size={20}/> {t.dashboard}</button>
+                             <button onClick={() => setView('student-dashboard')} className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg text-sm font-bold transition-all ${view === 'student-dashboard' ? 'bg-primary text-white shadow-md' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'}`}><PieChart size={20}/> {t['student-dashboard']}</button>
                         </div>
 
                         <nav className="flex-1 px-4 space-y-1 overflow-y-auto pb-4 custom-scrollbar">
                             {menuItems.map(cat => (
                                 <div key={cat.id} className="rounded-lg overflow-hidden">
                                     <button onClick={() => toggleCategory(cat.id)} className={`w-full flex items-center justify-between px-4 py-3 text-sm font-bold transition-all ${activeCategory === cat.id ? 'bg-gray-50 dark:bg-gray-800/50 text-primary' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-                                        <div className="flex items-center gap-3">{cat.icon} {t[cat.id]}</div>
-                                        <ChevronDown size={16} className={`transition-transform duration-300 ${activeCategory === cat.id ? 'rotate-180' : ''}`}/>
+                                        <div className="flex items-center gap-3">{cat.icon} {t[cat.id]}</div><ChevronDown size={16} className={`transition-transform duration-300 ${activeCategory === cat.id ? 'rotate-180' : ''}`}/>
                                     </button>
                                     <div className={`overflow-hidden transition-all duration-300 ease-in-out ${activeCategory === cat.id ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
                                         <div className="bg-gray-50 dark:bg-gray-800/30 py-2 pr-11 pl-4 space-y-1">
@@ -1073,7 +1085,7 @@
                         <div className="p-4 border-t border-gray-100 dark:border-gray-800">
                              <button onClick={() => { setView('user-account'); if(window.innerWidth < 768) setMenuOpen(false); }} className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition text-right">
                                 <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden border border-gray-300"><div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400"><User size={20}/></div></div>
-                                <div className="overflow-hidden"><h4 className="font-bold text-xs truncate text-gray-800 dark:text-gray-200">{isAr ? data.studentData?.nameAr : data.studentData?.nameEn}</h4><p className="text-[10px] text-gray-400 truncate">{data.studentData?.id}</p></div>
+                                <div className="overflow-hidden"><h4 className="font-bold text-xs truncate text-gray-800 dark:text-gray-200">{isAr ? student?.nameAr : student?.nameEn}</h4><p className="text-[10px] text-gray-400 truncate">{student?.id}</p></div>
                              </button>
                         </div>
                     </aside>
@@ -1114,14 +1126,6 @@
                     </main>
                 </div>
             );
-        };
-
-        const App = () => {
-            return (
-                <AppProvider>
-                    <MainApp />
-                </AppProvider>
-            )
         };
 
         const root = createRoot(document.getElementById('root'));
