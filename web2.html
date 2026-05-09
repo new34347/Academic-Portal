@@ -78,6 +78,33 @@ null"
         const db = firebase.database();
         window.firebaseDB = db; 
     </script>
+    <script>
+        // هذي البيانات الأساسية اللي بنرفعها كبداية
+        const initialData = {
+            student: {
+                name: "فيصل عبدالله الخالد",
+                id: "444002548",
+                major: "هندسة البرمجيات",
+                gpa: 3.35,
+                completedHours: 40,
+                currentHours: 18,
+                totalHours: 120
+            },
+            enrolledCourses: [
+                { id: 1, code: 'CS101', hours: 3, section: '201', name: 'مقدمة في البرمجة' }, 
+                { id: 2, code: 'MATH101', hours: 4, section: '105', name: 'تفاضل وتكامل' }
+            ]
+        };
+
+        // هذا الأمر اللي ياخذ البيانات ويرميها في الفايربيس
+        window.firebaseDB.ref('bawabaty_data').set(initialData)
+            .then(() => {
+                alert("مبروك! تم رفع البيانات بنجاح لفايربيس. روح شيك عليها!");
+            })
+            .catch((error) => {
+                console.error("صار خطأ:", error);
+            });
+    </script>
 </head>
 <body class="bg-gray-50 text-gray-800 dark:bg-dark-bg dark:text-dark-text transition-colors duration-300">
     <div id="root"></div>
