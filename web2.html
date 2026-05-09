@@ -63,6 +63,21 @@
     }
     </script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            // استبدل النص اللي بين علامتين التنصيص برابط قاعدة بياناتك
+            databaseURL: "https://yahya-b3b2c-default-rtdb.firebaseio.com/
+:
+null" 
+        };
+        
+        // تشغيل قاعدة البيانات
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        window.firebaseDB = db; 
+    </script>
 </head>
 <body class="bg-gray-50 text-gray-800 dark:bg-dark-bg dark:text-dark-text transition-colors duration-300">
     <div id="root"></div>
@@ -82,16 +97,6 @@
             Volume2, VolumeX, CalendarCheck, Video, Accessibility, Trash2,
             Activity, MousePointerClick
         } from 'lucide-react';
-
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, doc, setDoc, deleteDoc, collection, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
-
-        const firebaseConfig = typeof __firebase_config !== 'undefined' && __firebase_config ? JSON.parse(__firebase_config) : {};
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const globalAppId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         // --- Mock Data ---
         const studentData = {
@@ -3796,7 +3801,6 @@
         };
 
         const App = () => {
-            const [user, setUser] = useState(null); // حالة المستخدم للحفظ
             const [view, setView] = useState('home');
             const [activeCategory, setActiveCategory] = useState(null);
             const [darkMode, setDarkMode] = useState(false);
@@ -3809,26 +3813,6 @@
             // --- New Accessibility States ---
             const [reduceMotion, setReduceMotion] = useState(false);
             const [highlightLinks, setHighlightLinks] = useState(false);
-
-            // --- تهيئة المصادقة المطلوبة لقاعدة البيانات السحابية ---
-            useEffect(() => {
-                const initAuth = async () => {
-                    try {
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
-                    } catch (error) {
-                        console.error("Auth init error:", error);
-                    }
-                };
-                initAuth();
-
-                const unsubscribe = onAuthStateChanged(auth, setUser);
-                return () => unsubscribe();
-            }, []);
-            // ---------------------------------------------------------
 
             useEffect(() => { document.documentElement.classList.toggle('dark', darkMode); }, [darkMode]);
             // IMPORTANT: Ensure correct directory switching
@@ -3959,7 +3943,7 @@
                     case 'schedule': return <SchedulePage onBack={goHome} t={t} lang={lang} />;
                     case 'plan': return <PlanPage onBack={goHome} t={t} lang={lang} />;
                     case 'results': return <ResultsPage onBack={goHome} t={t} lang={lang} onOpenNotifications={openNotifications} />;
-                    case 'addDrop': return <AddDropPage onBack={goHome} lang={lang} user={user} db={db} appId={globalAppId} />;
+                    case 'addDrop': return <AddDropPage onBack={goHome} t={t} lang={lang} />;
                     
                     // Registration Views
                     case 'offered-courses': return <OfferedCoursesPage onBack={goHome} lang={lang} />;
