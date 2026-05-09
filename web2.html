@@ -83,32 +83,6 @@
             Activity, MousePointerClick
         } from 'lucide-react';
 
-        // --- Firebase DB Integration ---
-        const FIREBASE_DB_URL = "https://yahya-b3b2c-default-rtdb.firebaseio.com";
-
-        const dbService = {
-            async save(path, data) {
-                try {
-                    await fetch(`${FIREBASE_DB_URL}/${path}.json`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ ...data, timestamp: new Date().toISOString() })
-                    });
-                } catch (error) {
-                    console.error("Firebase Save Error:", error);
-                }
-            },
-            async get(path) {
-                try {
-                    const response = await fetch(`${FIREBASE_DB_URL}/${path}.json`);
-                    return await response.json();
-                } catch (error) {
-                    console.error("Firebase Read Error:", error);
-                    return null;
-                }
-            }
-        };
-
         // --- Mock Data ---
         const studentData = {
             name: "فيصل عبدالله الخالد",
@@ -316,9 +290,6 @@
                 const userMsg = { id: Date.now(), text: input, sender: 'user' };
                 setMessages(prev => [...prev, userMsg]);
                 setInput("");
-                
-                // حفظ الرسالة في قاعدة البيانات
-                dbService.save('chatbot_messages', userMsg);
                 
                 // Mock response simulation
                 setTimeout(() => {
@@ -1834,10 +1805,6 @@
             const executeAction = () => { 
                 const action = confirmationModal.type; 
                 const item = confirmationModal.item; 
-                
-                // حفظ حركة الحذف والإضافة في قاعدة البيانات
-                dbService.save('add_drop_actions', { action: action, course: item.code, section: item.section });
-
                 if (action === 'drop') { 
                     setEnrolled(enrolled.filter(c => c.id !== item.id)); 
                     setMessage({ text: t.successDrop, type: 'success' }); 
@@ -2146,10 +2113,7 @@
                             </div>
 
                             <button 
-                                onClick={() => {
-                                    dbService.save('department_requests', { type: type, course: selectedCourse });
-                                    setSubmitted(true);
-                                }} 
+                                onClick={() => setSubmitted(true)} 
                                 disabled={!selectedCourse}
                                 className={`w-full font-bold py-3 rounded-xl transition shadow-lg ${!selectedCourse ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' : 'bg-primary text-white hover:bg-teal-700 shadow-primary/20'}`}
                             >
@@ -2318,10 +2282,7 @@
                     </div>
 
                     <button 
-                        onClick={() => {
-                            dbService.save('multi_requests', { actions: actions, justification: justification });
-                            setSubmitted(true);
-                        }} 
+                        onClick={() => setSubmitted(true)} 
                         disabled={!isFormValid}
                         className={`w-full font-bold py-3.5 rounded-xl transition shadow-lg ${!isFormValid ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' : 'bg-primary text-white hover:bg-teal-700 shadow-primary/20'}`}
                     >
@@ -2462,10 +2423,7 @@
                             </div>
 
                             <button 
-                                onClick={() => {
-                                    dbService.save('academic_actions', { actionType: actionType });
-                                    setSubmitted(true);
-                                }} 
+                                onClick={() => setSubmitted(true)} 
                                 disabled={!actionType}
                                 className={`w-full font-bold py-3 rounded-xl transition shadow-lg ${!actionType ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' : 'bg-primary text-white hover:bg-teal-700 shadow-primary/20'}`}
                             >
@@ -2620,10 +2578,7 @@
                             {t.note}
                         </div>
 
-                        <button onClick={() => {
-                            dbService.save('major_changes', { status: 'submitted' });
-                            setSubmitted(true);
-                        }} className="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-teal-700 transition shadow-lg shadow-primary/20">
+                        <button onClick={() => setSubmitted(true)} className="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-teal-700 transition shadow-lg shadow-primary/20">
                             {t.submit}
                         </button>
                     </div>
@@ -2804,10 +2759,7 @@
                         </div>
 
                         <button 
-                            onClick={() => {
-                                dbService.save('office_hours', { professor: selectedProf, slot: selectedSlot });
-                                setSubmitted(true);
-                            }} 
+                            onClick={() => setSubmitted(true)} 
                             disabled={!selectedSlot}
                             className={`w-full font-bold py-3 rounded-xl transition shadow-lg ${!selectedSlot ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' : 'bg-primary text-white hover:bg-teal-700 shadow-primary/20'}`}
                         >
@@ -2992,10 +2944,7 @@
                         </div>
 
                         <button 
-                            onClick={() => {
-                                dbService.save('recommendations', { professor: selectedProf, purpose: purpose });
-                                setSubmitted(true);
-                            }} 
+                            onClick={() => setSubmitted(true)} 
                             disabled={!selectedProf || !purpose}
                             className={`w-full font-bold py-3 rounded-xl transition shadow-lg ${(!selectedProf || !purpose) ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' : 'bg-primary text-white hover:bg-teal-700 shadow-primary/20'}`}
                         >
@@ -3107,7 +3056,6 @@
             
             const handleWithdraw = (c) => {
                 const name = isAr ? c.nameAr : c.nameEn;
-                dbService.save('withdrawals', { courseCode: c.code, courseName: name });
                 alert(`${t.confirmPre} ${name}${t.confirmPost}`);
             };
 
@@ -3850,14 +3798,6 @@
             // --- New Accessibility States ---
             const [reduceMotion, setReduceMotion] = useState(false);
             const [highlightLinks, setHighlightLinks] = useState(false);
-
-            // تسجيل زيارة الموقع للتحقق من عمل قاعدة البيانات
-            useEffect(() => {
-                dbService.save('site_visits', { event: 'app_loaded' });
-                dbService.get('site_visits').then(data => {
-                    console.log("حالة قاعدة البيانات (Firebase): المتصل بنجاح.", data ? "يوجد سجلات" : "لا يوجد سجلات سابقة");
-                });
-            }, []);
 
             useEffect(() => { document.documentElement.classList.toggle('dark', darkMode); }, [darkMode]);
             // IMPORTANT: Ensure correct directory switching
