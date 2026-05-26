@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>بوابتي الأكاديمية - جامعة أم القرى</title>
     
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -51,6 +52,7 @@
         }
     </style>
 
+    <!-- Import Map for Stable Loading -->
     <script type="importmap">
     {
       "imports": {
@@ -116,8 +118,8 @@
                 chatbotTitle: "المساعد الأكاديمي (سند)", typeMessage: "اكتب رسالتك...",
                 back: "عودة", print: "طباعة", download: "تحميل",
                 hoursCompleted: "منجزة", hoursCurrent: "حالية", hoursRemaining: "متبقية",
-                analytics: "التحليلات",
-                'student-dashboard': 'لوحة المعلومات',
+                analytics: "التحليلات", // Category Title
+                'student-dashboard': 'لوحة المعلومات', // NEW Dashboard Item
                 exams: 'جدول الاختبارات', 
                 absences: 'الغيابات', 
                 record: 'السجل الأكاديمي',
@@ -147,7 +149,7 @@
                 allowances: 'البدلات',
                 'id-photo': 'الصورة الشخصية',
                 'user-account': 'حسابي',
-                // HomeView hardcoded strings
+                // HomeView hardcoded strings (Arabic is used for consistency in AR mode)
                 'total-hours-label': "إجمالي الساعات",
                 'view-all': "عرض الكل",
                 'upcoming-label': "قادمة",
@@ -169,7 +171,7 @@
             },
             en: {
                 welcome: "Welcome", 
-                dashboard: "Home",
+                dashboard: "Home", // CHANGED from Dashboard to Home
                 academic: "Academic",
                 registration: "Registration", 
                 requests: "Requests", 
@@ -227,12 +229,14 @@
                 'id-photo': 'Personal Photo Upload',
                 'user-account': 'My Account',
                 
+                // --- NEW KEYS FOR HOME VIEW CONTENT (EN) ---
                 'total-hours-label': "Total Hours", 
                 'view-all': "View All",
                 'upcoming-label': "Upcoming",
                 'days-label': "days",
                 'month-may': "May",
                 
+                // Attendance Statuses
                 'status-perfect': "Perfect! Keep it up 🌟",
                 'status-safe': "Safe",
                 'status-warning': "Warning",
@@ -245,16 +249,19 @@
                 // New Notification
                 notificationTitle: "Important Alert: Unrecorded Grade",
                 notificationBody: "Grade for (Operating Systems) from previous semester is not recorded. Please contact Dr. Al-Muhad immediately.",
-                'academic-events': 'Academic Events',
+                'academic-events': 'Academic Events', // NEW Translation
             }
         };
 
+        // --- Helper Components ---
+        // Updated HeaderPage to accept 'lang' to handle LTR/RTL back arrow direction
         const HeaderPage = ({ title, onBack, extra, lang }) => {
             const isAr = lang === 'ar';
             return (
                 <div className="flex items-center justify-between mb-6 animate-fade-in sticky top-0 bg-gray-50/95 dark:bg-dark-bg/95 z-20 py-3 backdrop-blur-sm border-b border-transparent">
                     <div className="flex items-center gap-3">
                         <button onClick={onBack} className="p-2 bg-white dark:bg-dark-card rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 shadow-sm border border-gray-100 dark:border-gray-700 transition-all group">
+                             {/* Conditional rotation for the back arrow icon based on language (LTR/RTL convention) */}
                             <ArrowRight size={20} className={`text-gray-500 dark:text-gray-300 group-hover:text-primary transition-transform ${!isAr ? 'rotate-180' : ''}`} />
                         </button>
                         <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">{title}</h2>
@@ -273,8 +280,10 @@
             </button>
         );
 
-        const Chatbot = ({ t }) => {
+        // --- NEW: Chatbot Component ---
+        const Chatbot = ({ t, lang }) => {
             const [isOpen, setIsOpen] = useState(false);
+            const isAr = lang === 'ar';
             const [messages, setMessages] = useState([
                 { id: 1, text: "مرحباً بك يا فيصل! أنا سند، مساعدك الأكاديمي. كيف يمكنني خدمتك اليوم؟", sender: 'bot' }
             ]);
@@ -295,6 +304,7 @@
                 setMessages(prev => [...prev, userMsg]);
                 setInput("");
                 
+                // Mock response simulation
                 setTimeout(() => {
                     const responses = [
                         "يمكنني مساعدتك في استعراض جدولك الدراسي أو متابعة طلباتك.",
@@ -315,13 +325,13 @@
                 <>
                     <button 
                         onClick={() => setIsOpen(!isOpen)} 
-                        className={`fixed bottom-6 left-6 z-50 p-4 rounded-full shadow-lg transition-all duration-300 hover:scale-110 ${isOpen ? 'bg-red-500 rotate-90' : 'bg-primary animate-bounce'} text-white border-4 border-white dark:border-dark-bg`}
+                        className={`fixed bottom-6 ${isAr ? 'left-6' : 'right-6'} z-50 p-4 rounded-full shadow-lg transition-all duration-300 hover:scale-110 ${isOpen ? 'bg-red-500 rotate-90' : 'bg-primary animate-bounce'} text-white border-4 border-white dark:border-dark-bg`}
                     >
                         {isOpen ? <X size={24}/> : <MessageCircle size={28}/>}
                     </button>
 
                     {isOpen && (
-                        <div className="fixed bottom-24 left-6 z-40 w-[90vw] md:w-96 bg-white dark:bg-dark-card rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col chat-enter h-[500px] max-h-[70vh]">
+                        <div className={`fixed bottom-24 ${isAr ? 'left-6' : 'right-6'} z-40 w-[90vw] md:w-96 bg-white dark:bg-dark-card rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col chat-enter h-[500px] max-h-[70vh]`}>
                             <div className="bg-gradient-to-r from-primary to-teal-800 p-4 flex items-center gap-3 shadow-md">
                                 <div className="p-2 bg-white/20 rounded-full text-white backdrop-blur-sm shadow-inner"><User size={20}/></div>
                                 <div>
@@ -368,6 +378,7 @@
             </div>
         );
 
+        // --- UPDATED: Notification Bell (Navigates to Page) ---
         const NotificationBell = ({ onClick }) => {
             return (
                 <div className="relative z-50">
@@ -382,6 +393,64 @@
             )
         };
 
+        // --- NEW: Countdown Timer Component ---
+        const CountdownTimer = ({ title, description, initialDays = 2, lang }) => {
+            const isAr = lang === 'ar';
+            const t = {
+                day: isAr ? "يوم" : "Day",
+                hour: isAr ? "ساعة" : "Hour",
+                min: isAr ? "دقيقة" : "Min",
+                sec: isAr ? "ثانية" : "Sec"
+            };
+            const [timeLeft, setTimeLeft] = useState({ days: initialDays, hours: 14, minutes: 30, seconds: 59 });
+
+            useEffect(() => {
+                const timer = setInterval(() => {
+                    setTimeLeft(prev => {
+                        if (prev.seconds > 0) return { ...prev, seconds: prev.seconds - 1 };
+                        if (prev.minutes > 0) return { ...prev, minutes: prev.minutes - 1, seconds: 59 };
+                        if (prev.hours > 0) return { ...prev, hours: prev.hours - 1, minutes: 59, seconds: 59 };
+                        if (prev.days > 0) return { ...prev, days: prev.days - 1, hours: 23, minutes: 59, seconds: 59 };
+                        return prev;
+                    });
+                }, 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            return (
+                <div className="bg-gradient-to-l from-primary to-teal-800 rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden mb-6">
+                    <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                    
+                    <div className="relative z-10 text-center md:text-right flex-1">
+                        <h3 className="text-xl font-bold mb-1 flex items-center justify-center md:justify-start gap-2">
+                            <Clock className="animate-pulse" size={24}/> {title}
+                        </h3>
+                        {description && <p className="text-teal-100 text-sm opacity-90">{description}</p>}
+                    </div>
+
+                    <div className="relative z-10 flex gap-4 shrink-0 justify-center">
+                        <div className="flex flex-col items-center bg-white/10 backdrop-blur-md rounded-lg p-3 min-w-[65px] border border-white/10 shadow-inner">
+                            <span className="text-2xl md:text-3xl font-bold font-mono">{timeLeft.days}</span>
+                            <span className="text-[10px] uppercase text-teal-200 font-bold">{t.day}</span>
+                        </div>
+                        <div className="flex flex-col items-center bg-white/10 backdrop-blur-md rounded-lg p-3 min-w-[65px] border border-white/10 shadow-inner">
+                            <span className="text-2xl md:text-3xl font-bold font-mono">{timeLeft.hours}</span>
+                            <span className="text-[10px] uppercase text-teal-200 font-bold">{t.hour}</span>
+                        </div>
+                        <div className="flex flex-col items-center bg-white/10 backdrop-blur-md rounded-lg p-3 min-w-[65px] border border-white/10 shadow-inner">
+                            <span className="text-2xl md:text-3xl font-bold font-mono">{timeLeft.minutes}</span>
+                            <span className="text-[10px] uppercase text-teal-200 font-bold">{t.min}</span>
+                        </div>
+                        <div className="flex flex-col items-center bg-white/10 backdrop-blur-md rounded-lg p-3 min-w-[65px] border border-white/10 shadow-inner">
+                            <span className="text-2xl md:text-3xl font-bold font-mono">{timeLeft.seconds}</span>
+                            <span className="text-[10px] uppercase text-teal-200 font-bold">{t.sec}</span>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- NEW: Notifications Page ---
         const NotificationsPage = ({ onBack, lang }) => {
             const isAr = lang === 'ar';
             const t = {
@@ -437,9 +506,11 @@
             );
         };
 
+        // --- NEW: StudentDashboardPage (Fixed Implementation) ---
         const StudentDashboardPage = ({ onBack, lang }) => {
             const isAr = lang === 'ar';
             
+            // Translations
             const t = {
                 title: isAr ? "لوحة معلومات الطالب" : "Student Dashboard",
                 registered: isAr ? "المقررات المسجلة" : "Registered Courses",
@@ -456,6 +527,7 @@
                 hours: isAr ? "ساعات" : "Hrs"
             };
 
+            // Data matching the image - Reduced to 4 Levels
             const gpaData = [
                 { sem: isAr ? 'المستوى 1' : 'Level 1', gpa: 3.85 },
                 { sem: isAr ? 'المستوى 2' : 'Level 2', gpa: 3.60 },
@@ -465,6 +537,7 @@
 
             const [hoveredPoint, setHoveredPoint] = useState(null);
             
+            // Chart Configuration
             const chartHeight = 220; 
             const chartWidth = 800;
             const paddingX = 80; 
@@ -473,15 +546,22 @@
             const minGPA = 2.0;
 
             const points = gpaData.map((item, index) => {
+                // Directional Calculation
                 const step = (chartWidth - (paddingX * 2)) / (gpaData.length - 1);
-                const xPos = chartWidth - paddingX - (index * step);
+                const xPos = isAr 
+                    ? (chartWidth - paddingX - (index * step)) 
+                    : (paddingX + (index * step));
+                
+                // Y Position inverted (SVG coords)
                 const yPos = chartHeight - paddingY - ((item.gpa - minGPA) / (maxGPA - minGPA)) * (chartHeight - (paddingY * 2));
                 return { x: xPos, y: yPos, ...item };
             });
 
+            // Create Path Commands
             const linePath = "M" + points.map(p => `${p.x},${p.y}`).join(" L");
             const areaPath = `${linePath} L${points[points.length-1].x},${chartHeight - paddingY} L${points[0].x},${chartHeight - paddingY} Z`;
 
+            // Attendance Data
             const attendanceStats = isAr ? [
                 { code: 'SE301', name: 'هندسة برمجيات', pct: 98, absent: 1, total: 45 },
                 { code: 'CS305', name: 'نظم تشغيل', pct: 91, absent: 4, total: 45 },
@@ -496,23 +576,29 @@
                 { code: 'ISL102', name: 'Islamic Culture', pct: 100, absent: 0, total: 30 },
             ];
 
+            const academicWarnings = 0;
+
             return (
                 <div className="animate-fade-in space-y-6 pb-10">
                     <HeaderPage title={t.title} onBack={onBack} lang={lang} />
                     
+                    {/* Top Cards Row */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Registered Courses */}
                         <div className="bg-white dark:bg-dark-card rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center text-center h-48 transition hover:shadow-md">
                             <div className="mb-4 text-primary bg-primary/10 p-4 rounded-full"><BookOpen size={32} strokeWidth={1.5} /></div>
                             <h3 className="text-gray-500 font-bold mb-2">{t.registered}</h3>
                             <span className="text-3xl font-bold text-gray-800 dark:text-white">6</span>
                         </div>
 
+                        {/* Remaining Courses */}
                         <div className="bg-white dark:bg-dark-card rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center text-center h-48 transition hover:shadow-md">
                             <div className="mb-4 text-blue-600 bg-blue-50 p-4 rounded-full"><Layers size={32} strokeWidth={1.5} /></div>
                             <h3 className="text-gray-500 font-bold mb-2">{t.remaining}</h3>
                             <span className="text-3xl font-bold text-gray-800 dark:text-white">22</span>
                         </div>
 
+                        {/* Earned Hours */}
                         <div className="bg-white dark:bg-dark-card rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center text-center h-48 transition hover:shadow-md">
                             <div className="mb-4 text-gold bg-yellow-50 p-4 rounded-full"><Medal size={32} strokeWidth={1.5} /></div>
                             <h3 className="text-gray-500 font-bold mb-2">{t.earned}</h3>
@@ -520,6 +606,7 @@
                         </div>
                     </div>
 
+                    {/* Middle: GPA Comparison Chart (Interactive) */}
                     <div className="bg-white dark:bg-dark-card rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xl font-bold text-primary dark:text-teal-400">{t.gpaAnalysis}</h3>
@@ -529,6 +616,7 @@
                         </div>
                         
                         <div className="w-full overflow-hidden relative">
+                            {/* --- Center Display Overlay (Smaller Version) --- */}
                             <div className={`absolute inset-0 flex items-center justify-center pointer-events-none z-10 transition-all duration-300 ${hoveredPoint ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                                 <div className="bg-white/95 dark:bg-dark-card/95 backdrop-blur-md px-6 py-3 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-600 text-center min-w-[140px]">
                                     <p className="text-[10px] text-gray-400 font-bold mb-0.5 uppercase tracking-wider">{hoveredPoint?.sem}</p>
@@ -554,6 +642,7 @@
                                         </filter>
                                     </defs>
 
+                                    {/* Grid Lines */}
                                     {[2.5, 3.0, 3.5, 4.0].map((val, i) => {
                                         const y = chartHeight - paddingY - ((val - minGPA) / (maxGPA - minGPA)) * (chartHeight - (paddingY * 2));
                                         return (
@@ -564,18 +653,23 @@
                                         );
                                     })}
 
+                                    {/* Area */}
                                     <path d={areaPath} fill="url(#chartFill)" />
 
+                                    {/* Line */}
                                     <path d={linePath} fill="none" stroke="#006771" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" filter="url(#shadow)" />
                                     
+                                    {/* Points and Interaction */}
                                     {points.map((p, i) => (
                                         <g key={i} 
                                            onMouseEnter={() => setHoveredPoint(p)} 
                                            onMouseLeave={() => setHoveredPoint(null)}
                                            className="cursor-pointer group"
                                         >
+                                            {/* Hit Area (Invisible larger circle) */}
                                             <circle cx={p.x} cy={p.y} r="35" fill="transparent" />
                                             
+                                            {/* Visible Point */}
                                             <circle 
                                                 cx={p.x} 
                                                 cy={p.y} 
@@ -586,6 +680,7 @@
                                                 className="transition-all duration-300"
                                             />
 
+                                            {/* Fixed Small Label (Always visible) */}
                                             <text 
                                                 x={p.x} 
                                                 y={p.y - 15} 
@@ -595,6 +690,7 @@
                                                 {p.gpa.toFixed(2)}
                                             </text>
 
+                                            {/* X-Axis Labels */}
                                             <text x={p.x} y={chartHeight - 5} textAnchor="middle" className={`text-xs font-bold transition-all ${hoveredPoint === p ? 'fill-primary text-base' : 'fill-gray-500 dark:fill-gray-400'}`}>
                                                 {p.sem}
                                             </text>
@@ -605,8 +701,11 @@
                         </div>
                     </div>
 
+                    {/* Bottom Row */}
                     <div className="grid grid-cols-1 gap-6">
+                        {/* Attendance Bar Chart - Full Width - Redesigned for Clarity */}
                         <div className="bg-white dark:bg-dark-card rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col">
+                            {/* Header */}
                             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                                 <div>
                                     <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
@@ -622,12 +721,17 @@
                                 </div>
                             </div>
 
+                            {/* Chart Area */}
                             <div className="relative w-full h-[400px]">
+                                {/* Grid Lines removed as requested */}
+
+                                {/* Bars Container */}
                                 <div className="absolute inset-0 flex items-end justify-around px-2 pb-6 pt-12 z-10">
                                     {attendanceStats.map((item, i) => {
                                         const absencePct = Math.round((item.absent / item.total) * 100);
                                         const attendancePct = 100 - absencePct;
                                         
+                                        // Simple Color Logic
                                         let barColor = 'bg-emerald-500';
                                         let lightColor = 'bg-emerald-50 dark:bg-emerald-900/10';
                                         let textColor = 'text-emerald-600 dark:text-emerald-400';
@@ -644,23 +748,29 @@
 
                                         return (
                                             <div key={i} className="relative flex flex-col items-center justify-end h-full w-full max-w-[80px] group cursor-pointer">
+                                                
+                                                {/* Percentage Bubble (Floats above bar) */}
                                                 <div className={`mb-3 px-3 py-1 rounded-lg text-sm font-bold shadow-sm border border-transparent transition-all transform group-hover:-translate-y-2 ${lightColor} ${textColor}`}>
                                                     {absencePct}% <span className="text-[10px] opacity-70 font-normal">{t.absence}</span>
                                                 </div>
 
+                                                {/* The Bar */}
                                                 <div className="w-12 md:w-16 bg-gray-100 dark:bg-gray-800 rounded-t-lg relative overflow-hidden h-full flex items-end shadow-inner">
                                                     <div 
                                                         className={`w-full ${barColor} rounded-t-lg transition-all duration-1000 ease-out relative`}
                                                         style={{ height: `${attendancePct}%` }}
                                                     >
+                                                        {/* Simple gradient overlay for depth */}
                                                         <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent"></div>
                                                     </div>
                                                 </div>
 
+                                                {/* Subject Name - Improved Visibility & Wrapping */}
                                                 <div className="mt-3 text-xs md:text-sm font-bold text-gray-800 dark:text-white text-center w-full leading-tight px-0.5 min-h-[2.5rem] flex items-start justify-center" title={item.name}>
                                                     <span className="line-clamp-2">{item.name}</span>
                                                 </div>
                                                 
+                                                {/* Hours Detail (Small under name) */}
                                                 <div className="text-[10px] text-gray-500 dark:text-gray-400 font-mono mt-0.5">
                                                     -{item.absent} {t.hours}
                                                 </div>
@@ -675,6 +785,7 @@
             );
         };
 
+        // --- NEW: Academic Events Page ---
         const AcademicEventsPage = ({ onBack, lang }) => {
             const isAr = lang === 'ar';
             const [now, setNow] = useState(new Date());
@@ -715,11 +826,11 @@
                 return { total, days, hours, minutes, seconds };
             };
 
-            const getTypeStyle = (type) => {
+            const getTypeConfig = (type) => {
                 switch(type) {
-                    case 'exam': return { bg: 'bg-red-50 dark:bg-red-900/10', text: 'text-red-600 dark:text-red-400', border: 'border-red-100 dark:border-red-800' };
-                    case 'project': return { bg: 'bg-purple-50 dark:bg-purple-900/10', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-100 dark:border-purple-800' };
-                    default: return { bg: 'bg-blue-50 dark:bg-blue-900/10', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-100 dark:border-blue-800' };
+                    case 'exam': return { icon: <AlertCircle size={18}/>, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-500' };
+                    case 'project': return { icon: <Layers size={18}/>, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'border-purple-500' };
+                    default: return { icon: <FileText size={18}/>, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-500' };
                 }
             };
 
@@ -729,48 +840,45 @@
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {events.map(event => {
                             const remaining = getTimeRemaining(event.dueDate);
-                            const style = getTypeStyle(event.type);
+                            const config = getTypeConfig(event.type);
                             return (
-                                <div key={event.id} className="bg-white dark:bg-dark-card rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col hover:shadow-md transition-all duration-300 overflow-hidden">
-                                    <div className={`p-4 border-b ${style.border} ${style.bg}`}>
-                                        <div className="flex justify-between items-start">
-                                            <span className={`px-2 py-1 rounded-lg text-xs font-bold bg-white/50 dark:bg-black/20 ${style.text}`}>
-                                                {t[event.type]}
+                                <div key={event.id} className="bg-white dark:bg-dark-card rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col group hover:border-primary transition-all duration-300 overflow-hidden relative">
+                                    <div className={`absolute top-0 ${isAr ? 'right-0' : 'left-0'} w-1 h-full ${config.border}`}></div>
+                                    
+                                    <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex-1">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <span className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 ${config.bg} ${config.color}`}>
+                                                {config.icon} {t[event.type]}
                                             </span>
-                                            <span className="text-xs font-mono font-bold text-gray-500 bg-white/50 dark:bg-black/20 px-2 py-1 rounded">{event.course}</span>
+                                            <span className="text-xs font-mono font-bold text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{event.course}</span>
                                         </div>
-                                        <h3 className="font-bold text-lg text-gray-800 dark:text-white mt-2 leading-tight">{event.title}</h3>
+                                        <h3 className="font-bold text-lg text-gray-800 dark:text-white leading-tight group-hover:text-primary transition-colors">{event.title}</h3>
+                                        
+                                        <div className="mt-4 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                            <Calendar size={16} className="text-gray-400"/>
+                                            <span className="font-mono dir-ltr">{event.dueDate.toLocaleDateString()}</span>
+                                            <span className="text-gray-300 dark:text-gray-600">|</span>
+                                            <span className="font-mono dir-ltr">{event.dueDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                        </div>
                                     </div>
                                     
-                                    <div className="p-5 flex-1 flex flex-col justify-between gap-4">
-                                        <div>
-                                            <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">{t.due}</p>
-                                            <div className="text-sm font-medium text-gray-600 dark:text-gray-300 flex items-center gap-2">
-                                                <Calendar size={16} className="text-primary"/>
-                                                <span className="dir-ltr">{event.dueDate.toLocaleDateString()}</span>
-                                                <span className="text-gray-300">|</span>
-                                                <span className="dir-ltr">{event.dueDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                    <div className="p-4 bg-gray-50 dark:bg-gray-800/50">
+                                        <p className="text-[10px] text-gray-500 font-bold mb-2 flex items-center gap-1.5"><Clock size={12}/> {t.remaining}</p>
+                                        {remaining ? (
+                                            <div className="flex gap-3 items-center font-mono text-gray-700 dark:text-gray-200 dir-ltr bg-white dark:bg-dark-card p-2 rounded-xl border border-gray-200 dark:border-gray-700 shadow-inner w-fit">
+                                                <div className="text-center min-w-[30px]"><span className="text-lg font-bold block leading-none">{remaining.days}</span><span className="text-[9px] text-gray-400 uppercase">{t.days}</span></div>
+                                                <span className="text-gray-300 dark:text-gray-600 mb-3">:</span>
+                                                <div className="text-center min-w-[30px]"><span className="text-lg font-bold block leading-none">{remaining.hours}</span><span className="text-[9px] text-gray-400 uppercase">{t.hours}</span></div>
+                                                <span className="text-gray-300 dark:text-gray-600 mb-3">:</span>
+                                                <div className="text-center min-w-[30px]"><span className="text-lg font-bold block leading-none">{remaining.minutes}</span><span className="text-[9px] text-gray-400 uppercase">{t.min}</span></div>
+                                                <span className="text-gray-300 dark:text-gray-600 mb-3">:</span>
+                                                <div className="text-center min-w-[30px]"><span className="text-lg font-bold block leading-none text-primary">{remaining.seconds}</span><span className="text-[9px] text-gray-400 uppercase">{t.sec}</span></div>
                                             </div>
-                                        </div>
-
-                                        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
-                                            <p className="text-[10px] text-gray-400 font-bold mb-2 text-center">{t.remaining}</p>
-                                            {remaining ? (
-                                                <div className="flex gap-2 justify-center items-center font-mono text-gray-700 dark:text-gray-200 dir-ltr">
-                                                    <div className="text-center"><span className="text-xl font-bold block leading-none">{remaining.days}</span><span className="text-[9px] text-gray-400">{t.days}</span></div>
-                                                    <span className="text-gray-300 mb-3">:</span>
-                                                    <div className="text-center"><span className="text-xl font-bold block leading-none">{remaining.hours}</span><span className="text-[9px] text-gray-400">{t.hours}</span></div>
-                                                    <span className="text-gray-300 mb-3">:</span>
-                                                    <div className="text-center"><span className="text-xl font-bold block leading-none">{remaining.minutes}</span><span className="text-[9px] text-gray-400">{t.min}</span></div>
-                                                    <span className="text-gray-300 mb-3">:</span>
-                                                    <div className="text-center"><span className="text-xl font-bold block leading-none text-primary">{remaining.seconds}</span><span className="text-[9px] text-gray-400">{t.sec}</span></div>
-                                                </div>
-                                            ) : (
-                                                <div className="text-center text-red-500 font-bold flex items-center justify-center gap-2">
-                                                    <Clock size={16}/> {t.completed}
-                                                </div>
-                                            )}
-                                        </div>
+                                        ) : (
+                                            <div className="text-red-500 font-bold flex items-center gap-2 bg-red-50 dark:bg-red-900/20 w-fit px-3 py-1.5 rounded-lg text-sm border border-red-100 dark:border-red-900">
+                                                <AlertCircle size={16}/> {t.completed}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             );
@@ -780,6 +888,7 @@
             );
         };
 
+        // 1. الجدول الدراسي
         const SchedulePage = ({ onBack, t, lang }) => {
             const isAr = lang === 'ar';
             const weekDays = isAr 
@@ -790,14 +899,16 @@
             for (let i = 8; i <= 21; i++) {
                 const start = i < 10 ? `0${i}` : i;
                 const end = i < 10 ? `0${i}` : i;
+                // Adjust time format based on language (RTL vs LTR presentation)
                 const label = isAr ? `${end}:50 - ${start}:00` : `${start}:00 - ${end}:50`; 
                 timeSlots.push({ hour: i, label: label });
             }
 
+            // Labels for the Modal
             const labels = {
                 college: isAr ? 'الكلية' : 'College',
                 type: isAr ? 'التصنيف' : 'Type',
-                mode: isAr ? 'نمط الدراسة' : 'Mode',
+                mode: isAr ? 'نمط الدراسة' : 'Mode', // inferred label context
                 time: isAr ? 'الوقت' : 'Time',
                 location: isAr ? 'الموقع' : 'Location',
                 room: isAr ? 'القاعة' : 'Room',
@@ -808,6 +919,7 @@
                 online: isAr ? 'عن بعد' : 'Online'
             };
 
+            // Updated Data with College, Type (Theory/Lab), Mode (In-person/Online)
             const schedule = {
                 [weekDays[0]]: [
                     { id: 1, name: isAr ? 'إحصاء هندسي' : 'Engineering Statistics', code: 'MATH101', start: 8, dur: 2, color: 'bg-[#56AB7C]', text: 'text-white', room: '101', prof: isAr ? 'د. أحمد سالم' : 'Dr. Ahmed Salem', profEmail: 'ahmed.salem@uqu.edu.sa', type: 'lec', mode: 'in-person', bldg: isAr ? 'قاعة الخوارزمي - الطابق الأرضي' : 'Al-Khwarizmi Hall - Ground Floor', college: isAr ? 'الكلية الجامعية' : 'University College' },
@@ -835,6 +947,7 @@
                 const endHour = start + dur - 1;
                 const s = start < 10 ? `0${start}` : start;
                 const e = endHour < 10 ? `0${endHour}` : endHour;
+                // Translation for time range in modal
                 return isAr ? `${e}:50 - ${s}:00` : `${s}:00 - ${e}:50`;
             };
 
@@ -846,9 +959,11 @@
                         </button>
                     } />
                     
+                    {/* Enhanced Modal */}
                     {selectedLecture && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setSelectedLecture(null)}>
                             <div className="bg-white dark:bg-dark-card w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700 transform transition-all scale-100 flex flex-col" onClick={e => e.stopPropagation()}>
+                                {/* Header */}
                                 <div className={`h-32 ${selectedLecture.color} relative flex flex-col items-center justify-center text-white`}>
                                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
                                     <button onClick={() => setSelectedLecture(null)} className="absolute top-4 right-4 bg-black/20 text-white p-2 rounded-full hover:bg-black/40 transition z-10"><X size={20}/></button>
@@ -856,7 +971,10 @@
                                     <span className="text-sm font-mono opacity-90 bg-white/20 px-3 py-1 rounded-full mt-2 relative z-10 backdrop-blur-sm">{selectedLecture.code}</span>
                                 </div>
                                 
+                                {/* Details Body */}
                                 <div className="p-6 space-y-4">
+                                    
+                                    {/* New Section: College & Type Details */}
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
                                             <p className="text-xs text-gray-500 font-bold mb-1">{labels.college}</p>
@@ -875,6 +993,7 @@
                                         </div>
                                     </div>
 
+                                    {/* Time */}
                                     <div className="flex items-center gap-4 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition border border-transparent hover:border-gray-100 dark:hover:border-gray-700">
                                         <div className="p-3 bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 rounded-full"><Clock size={20}/></div>
                                         <div>
@@ -883,6 +1002,7 @@
                                         </div>
                                     </div>
 
+                                    {/* Location */}
                                     <div className="flex items-center gap-4 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition border border-transparent hover:border-gray-100 dark:hover:border-gray-700">
                                         <div className="p-3 bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400 rounded-full"><MapPin size={20}/></div>
                                         <div>
@@ -892,6 +1012,7 @@
                                         </div>
                                     </div>
 
+                                    {/* Professor Info */}
                                     <div className="flex items-center gap-4 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition border border-transparent hover:border-gray-100 dark:hover:border-gray-700">
                                         <div className="p-3 bg-teal-50 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400 rounded-full"><User size={20}/></div>
                                         <div className="flex-1">
@@ -957,9 +1078,11 @@
             );
         };
 
+        // 2. الخطة الدراسية
         const PlanPage = ({ onBack, t, lang }) => {
             const isAr = lang === 'ar';
             
+            // Text Labels
             const labels = {
                 total: isAr ? "إجمالي الساعات" : "Total Hours",
                 hrs: isAr ? "س" : "Hrs",
@@ -1006,6 +1129,7 @@
                 }
             ];
             
+            // Generate dummy future levels
             for(let i=5; i<=8; i++) { 
                 levels.push({ 
                     id: i, 
@@ -1074,9 +1198,11 @@
             );
         };
 
+        // 3. النتائج
         const ResultsPage = ({ onBack, t, lang, onOpenNotifications }) => {
             const isAr = lang === 'ar';
             
+            // Labels
             const labels = {
                 gpa: isAr ? 'المعدل التراكمي (GPA)' : 'Cumulative GPA',
                 rating: isAr ? 'جيد جداً' : 'Very Good',
@@ -1125,7 +1251,7 @@
                     code: 'CS305', 
                     name: isAr ? 'نظم تشغيل' : 'Operating Systems', 
                     total: 0, 
-                    grade: 'NR', 
+                    grade: 'NR', // Updated to match the alert
                     isPending: true,
                     components: [
                         { label: componentLabels.lab, max: 20, student: 15, avg: 17 }, 
@@ -1161,7 +1287,12 @@
             const getScoreColor = (score, max) => { const pct = (score / max) * 100; if (pct >= 90) return 'bg-emerald-600 text-emerald-100'; if (pct >= 80) return 'bg-lime-400 text-lime-900'; if (pct >= 60) return 'bg-yellow-400 text-yellow-900'; return 'bg-red-500 text-white'; };
             const getScoreColorText = (score, max) => { const pct = (score / max) * 100; if (pct >= 90) return 'text-emerald-700'; if (pct >= 80) return 'text-lime-600'; if (pct >= 60) return 'text-yellow-600'; return 'text-red-600'; };
             const chartMax = 4.0;
-            const chartPoints = gpaTrend.map((item, index) => { const x = 10 + (index / (gpaTrend.length - 1)) * 80; const y = 60 - ((item.gpa / chartMax) * 50); return { x, y, ...item }; });
+            const chartPoints = gpaTrend.map((item, index) => { 
+                const xOffset = (index / (gpaTrend.length - 1)) * 80;
+                const x = isAr ? 90 - xOffset : 10 + xOffset; 
+                const y = 60 - ((item.gpa / chartMax) * 50); 
+                return { x, y, ...item }; 
+            });
             const pathData = "M" + chartPoints.map(p => `${p.x},${p.y}`).join(" L");
 
             return (
@@ -1227,10 +1358,12 @@
             );
         };
 
+        // 4. جدول الاختبارات
         const ExamsPage = ({ onBack, lang }) => {
             const isAr = lang === 'ar';
             const [selectedExam, setSelectedExam] = useState(null);
             
+            // Labels & Text
             const t = {
                 title: isAr ? "جدول الاختبارات النهائية" : "Final Exams Schedule",
                 print: isAr ? "طباعة البطاقة" : "Print Card",
@@ -1363,6 +1496,7 @@
             );
         };
 
+        // 5. سجل الغياب
         const AbsencesPage = ({ onBack, lang }) => {
             const isAr = lang === 'ar';
             const t = translations[lang];
@@ -1376,10 +1510,24 @@
                 hrs: isAr ? "ساعات" : "hrs",
                 noAbsences: isAr ? "لا توجد غيابات مسجلة لهذه المادة" : "No absences recorded for this course",
                 excused: isAr ? "بعذر" : "Excused",
-                unexcused: isAr ? "بدون عذر" : "Unexcused"
+                unexcused: isAr ? "بدون عذر" : "Unexcused",
+                submitExcuse: isAr ? "تقديم عذر" : "Submit Excuse",
+                editExcuse: isAr ? "عرض وتعديل العذر" : "View/Edit Excuse",
+                underReview: isAr ? "تحت الدراسة (تعديل)" : "Under Review (Edit)",
+                excuseAccepted: isAr ? "عذر مقبول" : "Excuse Accepted",
+                excuseRejected: isAr ? "عذر مرفوض" : "Excuse Rejected",
+                excuseDetails: isAr ? "تفاصيل العذر (نصي)" : "Excuse Details (Text)",
+                attachFile: isAr ? "إرفاق ملف أو صورة" : "Attach File or Image",
+                supportsFormat: isAr ? "يدعم PDF, JPG, PNG" : "Supports PDF, JPG, PNG",
+                cancel: isAr ? "إلغاء" : "Cancel",
+                submit: isAr ? "إرسال العذر" : "Submit Excuse",
+                saveChanges: isAr ? "حفظ التعديلات" : "Save Changes",
+                successMsg: isAr ? "تم إرسال العذر بنجاح وهو الآن تحت الدراسة" : "Excuse submitted successfully and is under review",
+                updateMsg: isAr ? "تم تحديث بيانات العذر بنجاح" : "Excuse details updated successfully",
+                errorMsg: isAr ? "يرجى كتابة العذر أو إرفاق ملف" : "Please write the excuse or attach a file"
             };
 
-            const courses = [
+            const initialCourses = [
                 { 
                     name: isAr ? 'برمجة متقدمة' : 'Advanced Programming', 
                     code: 'CS204', 
@@ -1397,8 +1545,8 @@
                     totalHours: 32, 
                     absentHours: 4, 
                     records: [
-                        { date: '2024-02-12', day: isAr ? 'الاثنين' : 'Monday', hours: 2, status: 'unexcused', note: isAr ? 'غائب' : 'Absent' }, 
-                        { date: '2024-03-04', day: isAr ? 'الاثنين' : 'Monday', hours: 2, status: 'unexcused', note: isAr ? 'غائب' : 'Absent' }
+                        { id: 1, date: '2024-02-12', day: isAr ? 'الاثنين' : 'Monday', hours: 2, status: 'unexcused', excuseStatus: 'none', note: isAr ? 'غائب' : 'Absent' }, 
+                        { id: 2, date: '2024-03-04', day: isAr ? 'الاثنين' : 'Monday', hours: 2, status: 'unexcused', excuseStatus: 'pending', note: isAr ? 'غائب' : 'Absent', submittedText: isAr ? 'عذر طبي من المستشفى الجامعي' : 'Medical excuse from university hospital' }
                     ] 
                 },
                 { 
@@ -1409,10 +1557,10 @@
                     totalHours: 40, 
                     absentHours: 8, 
                     records: [
-                        { date: '2024-01-28', day: isAr ? 'الأحد' : 'Sunday', hours: 2, status: 'excused', note: isAr ? 'تقرير طبي #442' : 'Medical Report #442' }, 
-                        { date: '2024-02-11', day: isAr ? 'الأحد' : 'Sunday', hours: 2, status: 'excused', note: isAr ? 'عذر مقبول' : 'Accepted Excuse' }, 
-                        { date: '2024-03-10', day: isAr ? 'الأحد' : 'Sunday', hours: 2, status: 'unexcused', note: isAr ? 'غائب' : 'Absent' }, 
-                        { date: '2024-03-24', day: isAr ? 'الأحد' : 'Sunday', hours: 2, status: 'excused', note: isAr ? 'ظرف عائلي' : 'Family Emergency' }
+                        { id: 3, date: '2024-01-28', day: isAr ? 'الأحد' : 'Sunday', hours: 2, status: 'excused', excuseStatus: 'accepted', note: isAr ? 'تقرير طبي #442' : 'Medical Report #442' }, 
+                        { id: 4, date: '2024-02-11', day: isAr ? 'الأحد' : 'Sunday', hours: 2, status: 'excused', excuseStatus: 'accepted', note: isAr ? 'عذر مقبول' : 'Accepted Excuse' }, 
+                        { id: 5, date: '2024-03-10', day: isAr ? 'الأحد' : 'Sunday', hours: 2, status: 'unexcused', excuseStatus: 'rejected', note: isAr ? 'غائب' : 'Absent' }, 
+                        { id: 6, date: '2024-03-24', day: isAr ? 'الأحد' : 'Sunday', hours: 2, status: 'excused', excuseStatus: 'accepted', note: isAr ? 'ظرف عائلي' : 'Family Emergency' }
                     ] 
                 },
                 { 
@@ -1423,22 +1571,108 @@
                     totalHours: 60, 
                     absentHours: 15, 
                     records: [
-                        { date: '2024-02-05', day: isAr ? 'الاثنين' : 'Monday', hours: 4, status: 'unexcused', note: isAr ? 'غائب' : 'Absent' }, 
-                        { date: '2024-03-11', day: isAr ? 'الاثنين' : 'Monday', hours: 2, status: 'unexcused', note: isAr ? 'غائب' : 'Absent' }, 
-                        { date: '2024-04-01', day: isAr ? 'الاثنين' : 'Monday', hours: 4, status: 'excused', note: isAr ? 'مراجعة مستشفى' : 'Hospital Appointment' }
+                        { id: 7, date: '2024-02-05', day: isAr ? 'الاثنين' : 'Monday', hours: 4, status: 'unexcused', excuseStatus: 'none', note: isAr ? 'غائب' : 'Absent' }, 
+                        { id: 8, date: '2024-03-11', day: isAr ? 'الاثنين' : 'Monday', hours: 2, status: 'unexcused', excuseStatus: 'none', note: isAr ? 'غائب' : 'Absent' }, 
+                        { id: 9, date: '2024-04-01', day: isAr ? 'الاثنين' : 'Monday', hours: 4, status: 'excused', excuseStatus: 'accepted', note: isAr ? 'مراجعة مستشفى' : 'Hospital Appointment' }
                     ] 
                 },
             ];
 
+            const [coursesData, setCoursesData] = useState(initialCourses);
+            const [selectedRecordForExcuse, setSelectedRecordForExcuse] = useState(null);
+            const [excuseText, setExcuseText] = useState('');
+            const [excuseFile, setExcuseFile] = useState(null);
+            const [toastMsg, setToastMsg] = useState(null);
+
+            const openExcuseModal = (course, record) => {
+                setSelectedRecordForExcuse({ courseCode: course.code, courseName: course.name, record: record });
+                setExcuseText(record.submittedText || '');
+                setExcuseFile(record.submittedFile ? { name: record.submittedFile } : null);
+            };
+
+            const handleExcuseSubmit = () => {
+                if (!excuseText.trim() && !excuseFile) {
+                    setToastMsg({ type: 'error', text: labels.errorMsg });
+                    setTimeout(() => setToastMsg(null), 3000);
+                    return;
+                }
+
+                const isEditing = selectedRecordForExcuse.record.excuseStatus === 'pending';
+
+                setCoursesData(prev => prev.map(course => {
+                    if (course.code === selectedRecordForExcuse.courseCode) {
+                        return {
+                            ...course,
+                            records: course.records.map(r => r.id === selectedRecordForExcuse.record.id ? { 
+                                ...r, 
+                                excuseStatus: 'pending',
+                                submittedText: excuseText,
+                                submittedFile: excuseFile ? excuseFile.name : null 
+                            } : r)
+                        };
+                    }
+                    return course;
+                }));
+
+                setToastMsg({ type: 'success', text: isEditing ? labels.updateMsg : labels.successMsg });
+                setSelectedRecordForExcuse(null);
+                setTimeout(() => setToastMsg(null), 3000);
+            };
+
             return (
                 <div className="animate-fade-in space-y-6">
+                    {toastMsg && <Toast message={toastMsg.text} type={toastMsg.type} onClose={() => setToastMsg(null)} />}
                     <HeaderPage title={labels.title} onBack={onBack} lang={lang} extra={<div className="bg-primary/10 text-primary px-3 py-1 rounded-lg text-sm font-bold border border-primary/20 flex items-center gap-2"><FileText size={16}/> {labels.regulations}</div>} />
+                    
+                    {/* Excuse Submission Modal */}
+                    {selectedRecordForExcuse && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setSelectedRecordForExcuse(null)}>
+                            <div className="bg-white dark:bg-dark-card w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700 transform transition-all scale-100 flex flex-col p-6" onClick={e => e.stopPropagation()}>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-xl font-bold text-gray-800 dark:text-white">
+                                        {selectedRecordForExcuse.record.excuseStatus === 'pending' ? labels.editExcuse : labels.submitExcuse}
+                                    </h3>
+                                    <button onClick={() => setSelectedRecordForExcuse(null)} className="text-gray-400 hover:text-gray-600"><X size={20}/></button>
+                                </div>
+                                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl mb-5 border border-gray-100 dark:border-gray-700">
+                                    <p className="text-sm font-bold text-gray-800 dark:text-white">{selectedRecordForExcuse.courseName}</p>
+                                    <p className="text-xs text-gray-500 font-mono mt-1">{selectedRecordForExcuse.record.day} - {selectedRecordForExcuse.record.date}</p>
+                                </div>
+
+                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{labels.excuseDetails}</label>
+                                <textarea
+                                    className="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none mb-4 text-gray-800 dark:text-white"
+                                    rows="3"
+                                    placeholder="..."
+                                    value={excuseText}
+                                    onChange={(e) => setExcuseText(e.target.value)}
+                                ></textarea>
+
+                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{labels.attachFile}</label>
+                                <label className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center hover:border-primary hover:bg-primary/5 transition cursor-pointer bg-gray-50 dark:bg-gray-800/50 mb-6 flex flex-col items-center justify-center w-full group">
+                                    <Upload className={`mb-2 transition-colors ${excuseFile ? 'text-primary' : 'text-gray-400 group-hover:text-primary'}`} size={28}/>
+                                    <span className={`text-sm font-bold mb-1 ${excuseFile ? 'text-primary' : 'text-gray-600 dark:text-gray-300'}`}>{excuseFile ? excuseFile.name : labels.attachFile}</span>
+                                    {!excuseFile && <span className="text-xs text-gray-400">{labels.supportsFormat}</span>}
+                                    <input type="file" className="hidden" onChange={(e) => setExcuseFile(e.target.files[0])} accept="image/*,.pdf" />
+                                </label>
+
+                                <div className="flex gap-3">
+                                    <button onClick={handleExcuseSubmit} className="flex-1 bg-primary text-white font-bold py-3 rounded-xl hover:bg-teal-700 transition shadow-lg shadow-primary/20">
+                                        {selectedRecordForExcuse.record.excuseStatus === 'pending' ? labels.saveChanges : labels.submit}
+                                    </button>
+                                    <button onClick={() => setSelectedRecordForExcuse(null)} className="flex-1 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 font-bold py-3 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition">{labels.cancel}</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-1 gap-6">
-                        {courses.map((course, idx) => {
+                        {coursesData.map((course, idx) => {
                             const progressPercent = Math.min((course.absencePct / 25) * 100, 100);
                             let statusColor = "bg-green-500";
                             let statusText = ""; 
                             
+                            // Logic for Horman (Denial) & Warnings
                             if (course.absencePct === 0) { 
                                 statusColor = "bg-emerald-500"; 
                                 statusText = t['status-perfect']; 
@@ -1452,14 +1686,17 @@
                                 statusText = t['status-warning']; 
                             } 
                             else if (course.absencePct >= 25) {
+                                // Horman (Denial) regardless of excuse if >= 25%
                                 statusColor = "bg-red-600";
                                 statusText = t['status-denial-limit'];
                             }
                             else if (course.absencePct >= 15) { 
                                 if (course.excused) { 
+                                    // High but excused (below 25%)
                                     statusColor = "bg-orange-400"; 
                                     statusText = t['status-high-excused']; 
                                 } else { 
+                                    // Unexcused >= 15% -> Denial
                                     statusColor = "bg-red-600"; 
                                     statusText = t['status-denial']; 
                                 } 
@@ -1472,6 +1709,7 @@
                                             <div><h3 className="font-bold text-lg text-gray-800 dark:text-white flex items-center gap-2">{course.name}<span className="text-xs font-normal text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full font-mono">{course.code}</span></h3><div className="text-xs text-gray-500 mt-1 flex gap-3"><span>{labels.totalHours}: {course.totalHours}</span><span className="text-red-500">{labels.absentHours}: {course.absentHours}</span></div></div>
                                             <div className="text-left">{statusText && (<span className={`block text-xs px-2 py-1 rounded font-bold text-white shadow-sm mb-1 text-center ${statusColor}`}>{statusText}</span>)}<span className={`text-xl font-bold font-mono ${course.absencePct >= 15 && !course.excused ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}>{course.absencePct}%</span></div>
                                         </div>
+                                        {/* Adjusted Progress Bar Logic for RTL/LTR */}
                                         <div className="relative w-full h-10">
                                             <div className="absolute top-3 w-full h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-visible">
                                                 <div className="absolute inset-0 rounded-full overflow-hidden">
@@ -1489,12 +1727,51 @@
                                         <div className="bg-gray-50 dark:bg-gray-800/30">
                                             <div className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700">{labels.daysRecord}</div>
                                             <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                                                {course.records.map((rec, rIdx) => {
+                                                {course.records.map((rec) => {
                                                     const percentage = ((rec.hours / course.totalHours) * 100).toFixed(1);
                                                     return (
-                                                        <div key={rIdx} className="px-6 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                                                            <div className="flex items-center gap-4"><div className={`p-2 rounded-lg ${rec.status === 'excused' ? 'bg-orange-100 text-orange-600' : 'bg-red-100 text-red-600'}`}><Calendar size={16}/></div><div><p className="text-sm font-bold text-gray-800 dark:text-gray-200">{rec.day} <span className="font-mono font-normal text-gray-500 text-xs dir-ltr">{rec.date}</span></p><div className="text-xs text-gray-500 flex items-center gap-1 mt-1"><span className="font-bold">{rec.hours} {labels.hrs}</span><span className="text-red-500 font-mono text-[10px] bg-red-50 dark:bg-red-900/30 px-1.5 rounded border border-red-100 dark:border-red-900">({percentage}%)</span><span className="text-gray-300 mx-1">•</span><span>{rec.note}</span></div></div></div>
-                                                            <span className={`text-[10px] font-bold px-2 py-1 rounded ${rec.status === 'excused' ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'}`}>{rec.status === 'excused' ? labels.excused : labels.unexcused}</span>
+                                                        <div key={rec.id} className="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-white dark:hover:bg-gray-800 transition">
+                                                            <div className="flex items-center gap-4">
+                                                                <div className={`p-2 rounded-lg ${rec.status === 'excused' ? 'bg-orange-100 text-orange-600' : 'bg-red-100 text-red-600'}`}>
+                                                                    <Calendar size={16}/>
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{rec.day} <span className="font-mono font-normal text-gray-500 text-xs dir-ltr">{rec.date}</span></p>
+                                                                    <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                                                                        <span className="font-bold">{rec.hours} {labels.hrs}</span>
+                                                                        <span className="text-red-500 font-mono text-[10px] bg-red-50 dark:bg-red-900/30 px-1.5 rounded border border-red-100 dark:border-red-900">({percentage}%)</span>
+                                                                        <span className="text-gray-300 mx-1">•</span>
+                                                                        <span>{rec.note}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center md:flex-col justify-between md:justify-center md:items-end gap-2 pl-12 md:pl-0">
+                                                                <span className={`text-[10px] font-bold px-2 py-1 rounded ${rec.status === 'excused' ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'}`}>
+                                                                    {rec.status === 'excused' ? labels.excused : labels.unexcused}
+                                                                </span>
+                                                                
+                                                                {/* New Excuse Status Visuals */}
+                                                                {rec.excuseStatus === 'none' && (
+                                                                    <button onClick={() => openExcuseModal(course, rec)} className="text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 active:scale-95">
+                                                                        <Upload size={14}/> {labels.submitExcuse}
+                                                                    </button>
+                                                                )}
+                                                                {rec.excuseStatus === 'pending' && (
+                                                                    <button onClick={() => openExcuseModal(course, rec)} className="text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 active:scale-95" title={labels.editExcuse}>
+                                                                        <FileText size={14}/> {labels.underReview}
+                                                                    </button>
+                                                                )}
+                                                                {rec.excuseStatus === 'accepted' && (
+                                                                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded flex items-center gap-1">
+                                                                        <CheckCircle2 size={12}/> {labels.excuseAccepted}
+                                                                    </span>
+                                                                )}
+                                                                {rec.excuseStatus === 'rejected' && (
+                                                                    <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-100 px-2 py-1 rounded flex items-center gap-1">
+                                                                        <X size={12}/> {labels.excuseRejected}
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     );
                                                 })}
@@ -1509,25 +1786,24 @@
             );
         };
 
+        // 6. السجل الأكاديمي
         const AcademicRecordPage = ({ onBack, lang, t, onOpenNotifications }) => {
             const isAr = lang === 'ar';
             
+            // Labels
             const labels = {
                 title: isAr ? "السجل الأكاديمي" : "Academic Record",
+                // ... (existing labels)
                 code: isAr ? "رمز المقرر" : "Course Code",
                 courseName: isAr ? "اسم المقرر" : "Course Name",
                 hours: isAr ? "الساعات" : "Hours",
                 earned: isAr ? "المكتسبة" : "Earned",
                 grade: isAr ? "الدرجة" : "Grade",
                 points: isAr ? "النقاط" : "Points",
+                // ...
                 earnedHours: isAr ? "ساعات مكتسبة" : "Earned Hours",
                 semGPA: isAr ? "المعدل الفصلي" : "Sem GPA",
-                cumGPA: isAr ? "المعدل التراكمي" : "Cum GPA",
-                college: isAr ? "الكلية" : "College",
-                major: isAr ? "التخصص" : "Major",
-                planType: isAr ? "الخطة" : "Plan",
-                status: isAr ? "الحالة" : "Status",
-                warnings: isAr ? "الإنذارات" : "Warnings"
+                cumGPA: isAr ? "المعدل التراكمي" : "Cum GPA"
             };
 
             const recordData = {
@@ -1545,7 +1821,7 @@
                         term: isAr ? "الفصل الدراسي الأول 1445" : "First Semester 1445", 
                         courses: [ 
                             { code: "SE301", name: isAr ? "هندسة برمجيات" : "Software Engineering", hours: 3, earned: 3, grade: "أ+", points: "95" }, 
-                            { code: "CS305", name: isAr ? "نظم تشغيل" : "Operating Systems", hours: 3, earned: 0, grade: "NR", points: "--", isPending: true },
+                            { code: "CS305", name: isAr ? "نظم تشغيل" : "Operating Systems", hours: 3, earned: 0, grade: "NR", points: "--", isPending: true }, // Updated with Alert
                             { code: "MATH201", name: isAr ? "إحصاء هندسي" : "Engineering Statistics", hours: 2, earned: 2, grade: "ب+", points: "88" }, 
                             { code: "PHYS101", name: isAr ? "فيزياء عامة" : "General Physics", hours: 4, earned: 0, grade: isAr ? "هـ" : "F", points: "55" } 
                         ], 
@@ -1643,6 +1919,7 @@
             );
         };
 
+        // 7. الحذف والإضافة
         const AddDropPage = ({ onBack, lang }) => {
             const isAr = lang === 'ar';
             
@@ -1699,13 +1976,7 @@
                 { code: 'ISL101', hours: 2, sections: [ { id: 's4', section: '401', profAr: 'د. عبدالرحمن', profEn: 'Dr. Abdulrahman', time: '08:00 - 08:50', daysAr: 'عن بعد', daysEn: 'Online', status: 'open' }, { id: 's5', section: '402', profAr: 'د. عبدالله', profEn: 'Dr. Abdullah', time: '09:00 - 09:50', daysAr: 'عن بعد', daysEn: 'Online', status: 'open' } ] }, 
                 { code: 'CS204', hours: 3, sections: [ { id: 's6', section: '201', profAr: 'د. علي القحطاني', profEn: 'Dr. Ali', time: '10:00 - 10:50', daysAr: 'الأحد - الثلاثاء - الخميس', daysEn: 'Sun - Tue - Thu', status: 'open' } ] } 
             ]);
-
             const [enrolled, setEnrolled] = useState([]);
-            const [filterTime, setFilterTime] = useState('');
-            const [selectedCourseForAdd, setSelectedCourseForAdd] = useState(null);
-            const [confirmationModal, setConfirmationModal] = useState(null); 
-            const [message, setMessage] = useState(null);
-            const [timeLeft, setTimeLeft] = useState({ days: 2, hours: 14, minutes: 30, seconds: 59 });
 
             useEffect(() => {
                 const enrolledRef = ref(db, 'user_enrolled_courses');
@@ -1719,6 +1990,14 @@
                     }
                 });
             }, []);
+            
+            const [filterTime, setFilterTime] = useState('');
+            const [selectedCourseForAdd, setSelectedCourseForAdd] = useState(null);
+            const [confirmationModal, setConfirmationModal] = useState(null); 
+            const [message, setMessage] = useState(null);
+            
+            // --- NEW: Timer State Logic ---
+            const [timeLeft, setTimeLeft] = useState({ days: 2, hours: 14, minutes: 30, seconds: 59 });
 
             useEffect(() => {
                 const timer = setInterval(() => {
@@ -1732,6 +2011,7 @@
                 }, 1000);
                 return () => clearInterval(timer);
             }, []);
+            // -----------------------------
 
             const filteredAvailable = availableCourses.filter(course => { if (!filterTime) return true; return course.sections.some(sec => sec.time.includes(filterTime)); });
             
@@ -1741,7 +2021,7 @@
             const handleAddClick = (course) => { setSelectedCourseForAdd(course); };
             const handleSectionSelect = (course, section) => { 
                 if (section.status === 'closed') { setMessage({ text: t.closedErr, type: 'error' }); setTimeout(() => setMessage(null), 3000); return; } 
-                setConfirmationModal({ type: 'add', item: { ...course, ...section }, title: t.addTitle, text: `${t.addMsg} ${getName(course.code)} - ${t.section} ${section.section}?` }); 
+                setConfirmationModal({ type: 'add', item: { ...course, ...section, id: Date.now() }, title: t.addTitle, text: `${t.addMsg} ${getName(course.code)} - ${t.section} ${section.section}?` }); 
             };
             
             const executeAction = () => { 
@@ -1772,6 +2052,7 @@
                 <div className="animate-fade-in space-y-6 relative">
                     <HeaderPage title={t.title} onBack={onBack} lang={lang} extra={<div className="flex gap-2"><span className="bg-primary/10 text-primary px-3 py-1 rounded-lg text-xs font-bold border border-primary/20">{t.registered}: {enrolled.reduce((acc, c) => acc + c.hours, 0)} {t.hours}</span></div>} />
                     
+                    {/* --- NEW: Countdown Timer Component --- */}
                     <div className="bg-gradient-to-l from-primary to-teal-800 rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
                         
@@ -1801,6 +2082,7 @@
                             </div>
                         </div>
                     </div>
+                    {/* -------------------------------------- */}
 
                     {message && <div className={`fixed top-4 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-xl text-white font-bold text-sm flex items-center gap-2 z-[60] animate-fade-in ${message.type === 'success' ? 'bg-green-600' : 'bg-red-600'}`}>{message.type === 'success' ? <CheckCircle2 size={18}/> : <AlertTriangle size={18}/>}{message.text}</div>}
                     {confirmationModal && (
@@ -1828,6 +2110,7 @@
             );
         };
 
+        // 8. المقررات المطروحة (بحث عام)
         const OfferedCoursesPage = ({ onBack, lang }) => {
             const [searchTerm, setSearchTerm] = useState('');
             const [selectedCourse, setSelectedCourse] = useState(null);
@@ -1843,7 +2126,8 @@
                 status: isAr ? "الحالة" : "Status",
                 open: isAr ? "متاح" : "Open",
                 closed: isAr ? "مغلق" : "Closed",
-                credits: isAr ? "ساعات معتمدة" : "Credits", 
+                // Additional labels used in cards
+                credits: isAr ? "ساعات معتمدة" : "Credits", // though not explicitly labeled in card, context is hours
                 sectionsAvailable: isAr ? "شعب متاحة" : "Sections Available"
             };
 
@@ -1892,6 +2176,7 @@
                 <div className="animate-fade-in space-y-6 relative">
                     <HeaderPage title={t.title} onBack={onBack} lang={lang} />
                     
+                    {/* Modal for Sections */}
                     {selectedCourse && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setSelectedCourse(null)}>
                             <div className="bg-white dark:bg-dark-card w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700 flex flex-col max-h-[80vh]" onClick={e => e.stopPropagation()}>
@@ -1969,6 +2254,7 @@
             );
         };
 
+        // 9. طلبات القسم (إضافة، تغيير شعبة، حذف) - مكون موحد
         const DepartmentRequestPage = ({ onBack, type, lang }) => {
             const isAr = lang === 'ar';
             
@@ -2036,6 +2322,14 @@
             return (
                 <div className="animate-fade-in space-y-6">
                     <HeaderPage title={titles[type]} onBack={onBack} lang={lang} />
+                    
+                    <CountdownTimer 
+                        title={isAr ? "يغلق التقديم على طلبات القسم خلال" : "Department requests close in"} 
+                        description={isAr ? "بادر بتقديم طلبك قبل إغلاق النظام" : "Submit your request before the system closes"}
+                        initialDays={2} 
+                        lang={lang} 
+                    />
+
                     <div className="bg-white dark:bg-dark-card p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
                         <div className="space-y-4">
                             <div>
@@ -2080,6 +2374,7 @@
             );
         };
 
+        // --- NEW: طلب مزدوج / استبدال (Multi-Request Page) ---
         const MultiRequestPage = ({ onBack, lang }) => {
             const isAr = lang === 'ar';
             
@@ -2114,12 +2409,25 @@
                 { code: 'MATH201', nameAr: 'إحصاء هندسي - MATH201', nameEn: 'Engineering Statistics - MATH201' }
             ];
 
+            // State for multiple actions
             const [actions, setActions] = useState([{ id: Date.now(), type: '', course: '', section: '' }]);
             const [justification, setJustification] = useState('');
             const [submitted, setSubmitted] = useState(false);
 
+            const handleSubmit = () => {
+                const reqRef = ref(db, 'registration_requests');
+                push(reqRef, {
+                    typeKey: 'multi',
+                    course: isAr ? 'طلب مزدوج' : 'Multi Request',
+                    actions: actions,
+                    justification: justification,
+                    date: new Date().toISOString().split('T')[0],
+                    status: 'pending'
+                }).then(() => setSubmitted(true));
+            };
+
             const handleAddAction = () => {
-                if (actions.length < 4) { 
+                if (actions.length < 4) { // Max 4 actions
                     setActions([...actions, { id: Date.now(), type: '', course: '', section: '' }]);
                 }
             };
@@ -2133,18 +2441,6 @@
             };
 
             const isFormValid = actions.every(a => a.type && a.course && (a.type === 'drop' || a.section)) && justification.trim().length > 0;
-
-            const handleSubmit = () => {
-                const reqRef = ref(db, 'registration_requests');
-                push(reqRef, {
-                    typeKey: 'multi',
-                    course: isAr ? 'طلب مزدوج' : 'Multi Request',
-                    actions: actions,
-                    justification: justification,
-                    date: new Date().toISOString().split('T')[0],
-                    status: 'pending'
-                }).then(() => setSubmitted(true));
-            };
 
             if(submitted) {
                 return (
@@ -2160,6 +2456,13 @@
             return (
                 <div className="animate-fade-in space-y-6">
                     <HeaderPage title={t.title} onBack={onBack} lang={lang} />
+                    
+                    <CountdownTimer 
+                        title={isAr ? "يغلق التقديم على الطلبات المزدوجة خلال" : "Multi-Request portal closes in"} 
+                        description={isAr ? "بادر بتقديم طلبك قبل إغلاق النظام" : "Submit your request before the system closes"}
+                        initialDays={2} 
+                        lang={lang} 
+                    />
                     
                     <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 p-4 rounded-xl flex gap-3 text-blue-800 dark:text-blue-200 text-sm">
                         <AlertCircle size={20} className="shrink-0"/>
@@ -2257,6 +2560,7 @@
             );
         };
 
+        // 10. طلبات التسجيل الإلكتروني
         const RegistrationRequestsPage = ({ onBack, lang }) => {
             const isAr = lang === 'ar';
             
@@ -2276,7 +2580,12 @@
                 }
             };
 
-            const [requests, setRequests] = useState([]);
+            const defaultMockRequests = [
+                { id: 'REG-8492', typeKey: 'add', course: 'SE301', date: '2026-05-24', status: 'approved' },
+                { id: 'REG-2910', typeKey: 'drop', course: 'CS204', date: '2026-05-25', status: 'rejected' }
+            ];
+
+            const [requests, setRequests] = useState(defaultMockRequests);
             useEffect(() => {
                 const reqRef = ref(db, 'registration_requests');
                 onValue(reqRef, (snapshot) => {
@@ -2286,9 +2595,9 @@
                             id: key.slice(-4).toUpperCase(),
                             ...data[key]
                         }));
-                        setRequests(reqList.reverse());
+                        setRequests([...reqList.reverse(), ...defaultMockRequests]);
                     } else {
-                        setRequests([]);
+                        setRequests(defaultMockRequests);
                     }
                 });
             }, []);
@@ -2319,6 +2628,7 @@
             );
         };
 
+        // 11. طلب حركة أكاديمية (جديد)
         const NewAcademicActionPage = ({ onBack, lang }) => {
             const [actionType, setActionType] = useState('');
             const [submitted, setSubmitted] = useState(false);
@@ -2369,6 +2679,14 @@
             return (
                 <div className="animate-fade-in space-y-6">
                     <HeaderPage title={t.title} onBack={onBack} lang={lang} />
+                    
+                    <CountdownTimer 
+                        title={isAr ? "يغلق التقديم على الحركات الأكاديمية خلال" : "Academic Actions portal closes in"} 
+                        description={isAr ? "سيتم إيقاف استقبال الطلبات بعد انتهاء الوقت المسموح" : "Request submissions will halt after time is up"}
+                        initialDays={5} 
+                        lang={lang} 
+                    />
+
                     <div className="bg-white dark:bg-dark-card p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
                         <div className="space-y-5">
                             <div>
@@ -2422,6 +2740,7 @@
             );
         };
 
+        // 12. عرض الحركات الأكاديمية (جديد)
         const ViewAcademicActionsPage = ({ onBack, lang }) => {
             const isAr = lang === 'ar';
             
@@ -2437,7 +2756,12 @@
                 }
             };
 
-            const [actions, setActions] = useState([]);
+            const defaultMockActions = [
+                { id: 'ACT-8291', type: isAr ? 'اعتذار عن فصل دراسي' : 'Semester Apology', term: isAr ? 'الفصل الدراسي الثاني' : 'Second Semester', date: '2026-05-20', status: 'approved' },
+                { id: 'ACT-4921', type: isAr ? 'تأجيل الدراسة' : 'Study Postponement', term: isAr ? 'الفصل الدراسي الثاني' : 'Second Semester', date: '2026-05-21', status: 'rejected' }
+            ];
+
+            const [actions, setActions] = useState(defaultMockActions);
             useEffect(() => {
                 const actionRef = ref(db, 'academic_actions');
                 onValue(actionRef, (snapshot) => {
@@ -2447,9 +2771,9 @@
                             id: key.slice(-4).toUpperCase(),
                             ...data[key]
                         }));
-                        setActions(actionList.reverse());
+                        setActions([...actionList.reverse(), ...defaultMockActions]);
                     } else {
-                        setActions([]);
+                        setActions(defaultMockActions);
                     }
                 });
             }, []);
@@ -2492,6 +2816,7 @@
             );
         };
 
+        // 13. طلب تغيير تخصص (جديد)
         const MajorChangeRequestPage = ({ onBack, lang }) => {
             const [submitted, setSubmitted] = useState(false);
             const isAr = lang === 'ar';
@@ -2549,6 +2874,14 @@
                 <div className="animate-fade-in space-y-6">
                     <HeaderPage title={t.title} onBack={onBack} lang={lang} />
                     
+                    <CountdownTimer 
+                        title={isAr ? "تغلق بوابة التحويل وتغيير التخصص خلال" : "Major Change portal closes in"} 
+                        description={isAr ? "تأكد من استيفاء الشروط قبل تقديم الطلب" : "Ensure you meet the requirements before submitting"}
+                        initialDays={1} 
+                        lang={lang} 
+                    />
+
+                    {/* معلومات الطالب الحالية */}
                     <div className="bg-primary/5 border border-primary/10 p-4 rounded-xl flex justify-between items-center">
                         <div>
                             <p className="text-xs text-gray-500 mb-1">{t.currentMajor}</p>
@@ -2571,7 +2904,7 @@
                                     onChange={(e) => setTargetCollege(e.target.value)}
                                     className="w-full p-3 pr-10 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none appearance-none text-gray-700 dark:text-gray-200"
                                 >
-                                    {t.colleges.map((c, i) => <option key={i} value={c}>{c}</option>)}
+                                    {t.colleges.map((c, i) => <option key={i}>{c}</option>)}
                                 </select>
                                 <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18}/>
                             </div>
@@ -2581,11 +2914,11 @@
                             <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t.targetMajor}</label>
                             <div className="relative">
                                 <select 
-                                    value={targetMajor}
+                                    value={targetMajor} 
                                     onChange={(e) => setTargetMajor(e.target.value)}
                                     className="w-full p-3 pr-10 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none appearance-none text-gray-700 dark:text-gray-200"
                                 >
-                                    {t.majors.map((m, i) => <option key={i} value={m}>{m}</option>)}
+                                    {t.majors.map((m, i) => <option key={i}>{m}</option>)}
                                 </select>
                                 <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18}/>
                             </div>
@@ -2603,6 +2936,7 @@
             );
         };
 
+        // 14. عرض طلبات تغيير التخصص (جديد)
         const ViewMajorChangeRequestsPage = ({ onBack, lang }) => {
             const isAr = lang === 'ar';
             
@@ -2618,7 +2952,12 @@
                 }
             };
 
-            const [requests, setRequests] = useState([]);
+            const defaultMockRequests = [
+                { id: 'CHG-9841', target: isAr ? 'علوم الحاسب الآلي' : 'Computer Science', date: '2026-05-20', status: 'approved' },
+                { id: 'CHG-5102', target: isAr ? 'نظم المعلومات' : 'Information Systems', date: '2026-05-21', status: 'rejected' }
+            ];
+
+            const [requests, setRequests] = useState(defaultMockRequests);
             useEffect(() => {
                 const reqRef = ref(db, 'major_change_requests');
                 onValue(reqRef, (snapshot) => {
@@ -2628,9 +2967,9 @@
                             id: key.slice(-4).toUpperCase(),
                             ...data[key]
                         }));
-                        setRequests(list.reverse());
+                        setRequests([...list.reverse(), ...defaultMockRequests]);
                     } else {
-                        setRequests([]);
+                        setRequests(defaultMockRequests);
                     }
                 });
             }, []);
@@ -2670,6 +3009,7 @@
             );
         };
 
+        // --- NEW: حجز ساعات مكتبية ---
         const OfficeHoursBookPage = ({ onBack, lang }) => {
             const isAr = lang === 'ar';
             const [submitted, setSubmitted] = useState(false);
@@ -2717,7 +3057,7 @@
                     { id: 's6', day: isAr ? 'الاثنين' : 'Monday', date: '2024-05-20', time: '13:00 - 14:00', mode: 'online', room: 'Zoom' }
                 ]
             };
-
+            
             const handleSubmit = () => {
                 const reqRef = ref(db, 'office_hours');
                 const prof = profs.find(p=>p.id === selectedProf);
@@ -2815,6 +3155,7 @@
             );
         };
 
+        // --- NEW: مواعيدي المكتبية (عرض المواعيد) ---
         const OfficeHoursViewPage = ({ onBack, lang }) => {
             const isAr = lang === 'ar';
             
@@ -2832,7 +3173,13 @@
                 }
             };
 
-            const [appointments, setAppointments] = useState([]);
+            const defaultMockAppts = [
+                { id: 'APT-1', realId: 'mock1', prof: isAr ? 'د. خالد الشهري' : 'Dr. Khalid Al-Shehri', course: isAr ? 'أستاذ أمن سيبراني' : 'Instructor - CS320', date: '2026-05-28', time: '09:00 - 10:00', mode: 'online', status: 'confirmed', link: '#' },
+                { id: 'APT-3', realId: 'mock3', prof: isAr ? 'أ. محمد علي' : 'Mr. Mohamed Ali', course: isAr ? 'أستاذ تحليل كيميائي' : 'Instructor - CH202', date: '2026-04-10', time: '11:00 - 12:00', mode: 'inPerson', room: isAr ? 'معمل 3' : 'Lab 3', status: 'completed' },
+                { id: 'APT-4', realId: 'mock4', prof: isAr ? 'د. أحمد سالم' : 'Dr. Ahmed Salem', course: isAr ? 'أستاذ إحصاء هندسي' : 'Instructor - MATH101', date: '2026-04-12', time: '13:00 - 14:00', mode: 'online', status: 'canceled', link: '#' }
+            ];
+
+            const [appointments, setAppointments] = useState(defaultMockAppts);
             useEffect(() => {
                 const reqRef = ref(db, 'office_hours');
                 onValue(reqRef, (snapshot) => {
@@ -2843,14 +3190,20 @@
                             realId: key, // Keep original key for deletion
                             ...data[key]
                         }));
-                        setAppointments(list.reverse());
+                        setAppointments([...list.reverse(), ...defaultMockAppts]);
                     } else {
-                        setAppointments([]);
+                        setAppointments(defaultMockAppts);
                     }
                 });
             }, []);
 
             const cancelAppointment = (id) => {
+                if (id && id.startsWith('mock')) {
+                    if(window.confirm(isAr ? 'هل أنت متأكد من إلغاء الموعد؟' : 'Are you sure you want to cancel?')) {
+                        setAppointments(prev => prev.filter(appt => appt.realId !== id));
+                    }
+                    return;
+                }
                 if(window.confirm(isAr ? 'هل أنت متأكد من إلغاء الموعد؟' : 'Are you sure you want to cancel?')) {
                     remove(ref(db, `office_hours/${id}`));
                 }
@@ -2869,18 +3222,18 @@
                 <div className="animate-fade-in space-y-6">
                     <HeaderPage title={t.title} onBack={onBack} lang={lang} />
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         {appointments.length === 0 && <p className="text-center text-gray-500 py-10 col-span-2">{t.empty}</p>}
                         {appointments.map(appt => (
-                            <div key={appt.id} className={`bg-white dark:bg-dark-card p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col ${appt.status === 'completed' || appt.status === 'canceled' ? 'opacity-70' : ''}`}>
+                            <div key={appt.id} className={`bg-white dark:bg-dark-card p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col group hover:border-primary transition-all duration-300 ${appt.status === 'completed' || appt.status === 'canceled' ? 'opacity-70 grayscale-[30%]' : ''}`}>
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="flex items-center gap-3">
-                                        <div className={`p-2.5 rounded-xl ${appt.mode === 'online' ? 'bg-purple-50 text-purple-600' : 'bg-blue-50 text-blue-600'}`}>
-                                            {appt.mode === 'online' ? <Video size={20}/> : <MapPin size={20}/>}
+                                        <div className={`p-3 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-primary`}>
+                                            <User size={24}/>
                                         </div>
                                         <div>
-                                            <h4 className="font-bold text-gray-800 dark:text-white text-base">{appt.prof}</h4>
-                                            <span className="text-xs text-gray-500 font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded mt-1 inline-block">{appt.course}</span>
+                                            <h4 className="font-bold text-gray-800 dark:text-white text-base group-hover:text-primary transition-colors">{appt.prof}</h4>
+                                            <span className="text-xs text-gray-500 font-mono mt-0.5 block">{appt.course}</span>
                                         </div>
                                     </div>
                                     <span className={`text-[10px] font-bold px-2 py-1 rounded border flex items-center gap-1 ${getStatusStyle(appt.status)}`}>
@@ -2889,29 +3242,38 @@
                                     </span>
                                 </div>
                                 
-                                <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col gap-2 mb-4 flex-1">
-                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                                        <CalendarCheck size={16} className="text-gray-400"/>
-                                        <span className="font-mono dir-ltr">{appt.date}</span>
-                                        <span className="text-gray-300 mx-1">|</span>
-                                        <span className="font-mono dir-ltr">{appt.time}</span>
+                                <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col gap-3 mb-5 flex-1">
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-gray-500 flex items-center gap-1.5"><Calendar size={16}/> {isAr ? "الموعد" : "Date"}</span>
+                                        <span className="font-mono text-gray-800 dark:text-gray-200 font-bold dir-ltr">{appt.date}</span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                                        {appt.mode === 'online' ? <Video size={16} className="text-gray-400"/> : <MapPin size={16} className="text-gray-400"/>}
-                                        <span>{appt.mode === 'online' ? (isAr ? 'عن بعد' : 'Online') : appt.room}</span>
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-gray-500 flex items-center gap-1.5"><Clock size={16}/> {isAr ? "الوقت" : "Time"}</span>
+                                        <span className="font-mono text-gray-800 dark:text-gray-200 font-bold dir-ltr">{appt.time}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm border-t border-gray-200 dark:border-gray-700 pt-3 mt-1">
+                                        <span className="text-gray-500 flex items-center gap-1.5">
+                                            {appt.mode === 'online' ? <Video size={16}/> : <MapPin size={16}/>}
+                                            {isAr ? "المكان" : "Location"}
+                                        </span>
+                                        <span className={`font-bold text-xs px-2 py-1 rounded-md ${appt.mode === 'online' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30'}`}>
+                                            {appt.mode === 'online' ? (isAr ? 'عن بعد (Teams)' : 'Online (Teams)') : appt.room}
+                                        </span>
                                     </div>
                                 </div>
 
-                                {appt.status === 'confirmed' && appt.mode === 'online' && (
-                                    <a href={appt.link} className="w-full bg-primary/10 text-primary hover:bg-primary hover:text-white transition font-bold py-2.5 rounded-xl text-sm flex justify-center items-center gap-2 border border-primary/20 hover:border-transparent">
-                                        <Link size={16}/> {t.joinBtn}
-                                    </a>
-                                )}
-                                {(appt.status === 'pending' || appt.status === 'confirmed') && appt.mode !== 'online' && (
-                                    <button onClick={() => cancelAppointment(appt.realId)} className="w-full bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition font-bold py-2.5 rounded-xl text-sm border border-red-100 hover:border-transparent">
-                                        {t.cancelBtn}
-                                    </button>
-                                )}
+                                <div className="flex gap-3">
+                                    {appt.status === 'confirmed' && appt.mode === 'online' && (
+                                        <a href={appt.link} className="flex-1 bg-primary/10 text-primary hover:bg-primary hover:text-white transition font-bold py-2.5 rounded-xl text-sm flex justify-center items-center gap-2 border border-primary/20 hover:border-transparent">
+                                            <Link size={16}/> {t.joinBtn}
+                                        </a>
+                                    )}
+                                    {(appt.status === 'pending' || appt.status === 'confirmed') && appt.mode !== 'online' && (
+                                        <button onClick={() => cancelAppointment(appt.realId)} className="flex-1 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition font-bold py-2.5 rounded-xl text-sm border border-red-100 hover:border-transparent flex justify-center items-center gap-2">
+                                            <X size={16}/> {t.cancelBtn}
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -2919,13 +3281,26 @@
             );
         };
 
-        // --- طلب رسالة توصية (مربوط بقاعدة البيانات) ---
+        // --- NEW: طلب رسالة توصية (Request Recommendation) ---
         const NewRecommendationPage = ({ onBack, lang }) => {
             const isAr = lang === 'ar';
             const [submitted, setSubmitted] = useState(false);
             const [selectedProf, setSelectedProf] = useState('');
             const [purpose, setPurpose] = useState('');
             const [notes, setNotes] = useState('');
+
+            const handleSubmit = () => {
+                const reqRef = ref(db, 'recommendations');
+                const prof = profs.find(p => p.id === selectedProf);
+                push(reqRef, {
+                    prof: prof ? prof.name : '',
+                    role: prof ? prof.role : '',
+                    purpose: purpose,
+                    notes: notes,
+                    date: new Date().toISOString().split('T')[0],
+                    status: 'pending'
+                }).then(() => setSubmitted(true));
+            };
 
             const t = {
                 title: isAr ? "طلب رسالة توصية" : "Request Recommendation Letter",
@@ -2948,19 +3323,6 @@
                 { id: 'p3', name: isAr ? 'أ. محمد علي' : 'Mr. Mohamed Ali', role: isAr ? 'أستاذ مقرر تحليل كيميائي' : 'Instructor - CH202' },
                 { id: 'p4', name: isAr ? 'أ.د. فهد الزهراني' : 'Prof. Fahad Al-Zahrani', role: isAr ? 'عميد كلية الحاسب الآلي' : 'Dean of Computer College' }
             ];
-
-            const handleSubmit = () => {
-                const reqRef = ref(db, 'recommendations');
-                const prof = profs.find(p => p.id === selectedProf);
-                push(reqRef, {
-                    prof: prof ? prof.name : '',
-                    role: prof ? prof.role : '',
-                    purpose: purpose,
-                    notes: notes,
-                    date: new Date().toISOString().split('T')[0],
-                    status: 'pending'
-                }).then(() => setSubmitted(true));
-            };
 
             if(submitted) {
                 return (
@@ -3033,7 +3395,7 @@
             );
         };
 
-        // --- عرض التوصيات الأكاديمية (مربوط بقاعدة البيانات) ---
+        // --- NEW: عرض التوصيات الأكاديمية (View Recommendations) ---
         const ViewRecommendationsPage = ({ onBack, lang }) => {
             const isAr = lang === 'ar';
             
@@ -3051,8 +3413,12 @@
                 }
             };
 
-            const [recommendations, setRecommendations] = useState([]);
-            
+            const defaultMockRecs = [
+                { id: 'REC-3912', prof: isAr ? 'د. أحمد سالم' : 'Dr. Ahmed Salem', role: isAr ? 'أستاذ مقرر الإحصاء الهندسي' : 'Instructor - MATH101', purpose: isAr ? 'التقديم على برنامج الماجستير' : 'Applying for Master\'s Program', date: '2026-05-18', status: 'approved' },
+                { id: 'REC-8291', prof: isAr ? 'د. خالد الشهري' : 'Dr. Khalid Al-Shehri', role: isAr ? 'أستاذ مقرر أمن سيبراني' : 'Instructor - CS320', purpose: isAr ? 'التقديم على برنامج الماجستير' : 'Applying for Master\'s Program', date: '2026-05-19', status: 'rejected' }
+            ];
+
+            const [recommendations, setRecommendations] = useState(defaultMockRecs);
             useEffect(() => {
                 const reqRef = ref(db, 'recommendations');
                 onValue(reqRef, (snapshot) => {
@@ -3062,9 +3428,9 @@
                             id: key.slice(-4).toUpperCase(),
                             ...data[key]
                         }));
-                        setRecommendations(list.reverse());
+                        setRecommendations([...list.reverse(), ...defaultMockRecs]);
                     } else {
-                        setRecommendations([]);
+                        setRecommendations(defaultMockRecs);
                     }
                 });
             }, []);
@@ -3127,46 +3493,76 @@
             );
         };
 
-        // --- الانسحاب من مقرر (مربوط بقاعدة البيانات) ---
+        // 15. الانسحاب من مقرر
         const WithdrawPage = ({ onBack, lang }) => {
             const isAr = lang === 'ar';
-            const [message, setMessage] = useState(null);
+            const [confirmWithdraw, setConfirmWithdraw] = useState(null);
+            const [toastMsg, setToastMsg] = useState(null);
             
             const t = {
                 title: isAr ? "الانسحاب من مقرر" : "Course Withdrawal",
                 warning: isAr ? "تنبيه: الانسحاب من المقرر سيؤدي إلى رصد تقدير (ع) في سجلك الأكاديمي ولن يدخل في احتساب المعدل، ولكن ستحسب الساعات ضمن الحد الأقصى المسموح به." 
                               : "Warning: Course withdrawal will result in a (W) grade in your academic record. It will not affect your GPA but will count towards the maximum allowed hours.",
                 withdrawBtn: isAr ? "انسحاب" : "Withdraw",
-                confirmPre: isAr ? "سيتم رصد تقدير (ع) لمقرر" : "A grade of (W) will be recorded for course",
-                confirmPost: isAr ? ". هل أنت متأكد؟" : ". Are you sure?",
-                success: isAr ? 'تم تقديم طلب الانسحاب بنجاح' : 'Withdrawal request submitted successfully'
+                confirmPre: isAr ? "هل أنت متأكد من رغبتك في الانسحاب من مقرر" : "Are you sure you want to withdraw from course",
+                confirmPost: isAr ? "؟ سيتم رصد تقدير (ع)." : "? A grade of (W) will be recorded.",
+                confirmAction: isAr ? "تأكيد الانسحاب" : "Confirm Withdrawal",
+                cancel: isAr ? "إلغاء" : "Cancel",
+                success: isAr ? "تم إرسال طلب الانسحاب بنجاح" : "Withdrawal request submitted successfully"
             };
 
             const courses = [
-                { code: 'CS101', nameAr: 'مقدمة في البرمجة', nameEn: 'Intro to Programming' },
-                { code: 'MATH101', nameAr: 'تفاضل وتكامل', nameEn: 'Calculus' }
+                { id: 1, code: 'CS101', nameAr: 'مقدمة في البرمجة', nameEn: 'Intro to Programming' },
+                { id: 2, code: 'MATH101', nameAr: 'تفاضل وتكامل', nameEn: 'Calculus' }
             ];
             
             const handleWithdraw = (c) => {
-                const name = isAr ? c.nameAr : c.nameEn;
-                if(window.confirm(`${t.confirmPre} ${name}${t.confirmPost}`)) {
-                    const reqRef = ref(db, 'registration_requests');
-                    push(reqRef, {
-                        typeKey: 'withdraw',
-                        course: c.code,
-                        date: new Date().toISOString().split('T')[0],
-                        status: 'pending'
-                    }).then(() => {
-                        setMessage({ text: t.success, type: 'success' });
-                        setTimeout(() => setMessage(null), 3000);
-                    });
-                }
+                setConfirmWithdraw(c);
+            };
+
+            const executeWithdraw = () => {
+                const reqRef = ref(db, 'registration_requests');
+                push(reqRef, {
+                    typeKey: 'withdraw',
+                    course: confirmWithdraw.code,
+                    date: new Date().toISOString().split('T')[0],
+                    status: 'pending'
+                }).then(() => {
+                    setConfirmWithdraw(null);
+                    setToastMsg({ type: 'success', text: t.success });
+                    setTimeout(() => setToastMsg(null), 3000);
+                });
             };
 
             return (
                 <div className="animate-fade-in space-y-6">
                     <HeaderPage title={t.title} onBack={onBack} lang={lang} />
-                    {message && <Toast message={message.text} type={message.type} onClose={() => setMessage(null)} />}
+                    
+                    <CountdownTimer 
+                        title={isAr ? "يغلق باب الانسحاب خلال" : "Withdrawal period ends in"} 
+                        description={isAr ? "يمكنك الانسحاب من المقررات قبل إغلاق الفترة المحددة" : "You can withdraw from courses before the period ends"}
+                        initialDays={3} 
+                        lang={lang} 
+                    />
+
+                    {toastMsg && <Toast message={toastMsg.text} type={toastMsg.type} onClose={() => setToastMsg(null)} />}
+                    
+                    {confirmWithdraw && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setConfirmWithdraw(null)}>
+                            <div className="bg-white dark:bg-dark-card w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700 transform transition-all p-6" onClick={e => e.stopPropagation()}>
+                                <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4"><AlertTriangle size={32}/></div>
+                                <h3 className="text-lg font-bold text-center mb-2 text-gray-800 dark:text-white">{isAr ? confirmWithdraw.nameAr : confirmWithdraw.nameEn}</h3>
+                                <p className="text-sm text-gray-500 text-center mb-6 leading-relaxed">
+                                    {t.confirmPre} <span className="font-bold text-gray-800 dark:text-gray-200">{isAr ? confirmWithdraw.nameAr : confirmWithdraw.nameEn}</span>{t.confirmPost}
+                                </p>
+                                <div className="flex gap-3">
+                                    <button onClick={executeWithdraw} className="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 transition shadow-lg shadow-red-600/20 active:scale-95">{t.confirmAction}</button>
+                                    <button onClick={() => setConfirmWithdraw(null)} className="flex-1 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 font-bold py-3 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition">{t.cancel}</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 p-4 rounded-xl flex gap-3">
                         <AlertTriangle className="text-red-600 shrink-0"/>
                         <p className="text-sm text-red-700 dark:text-red-200">{t.warning}</p>
@@ -3174,12 +3570,14 @@
                     
                     <div className="space-y-3">
                         {courses.map((c, i) => (
-                            <div key={i} className="bg-white dark:bg-dark-card p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex justify-between items-center shadow-sm">
+                            <div key={i} className="bg-white dark:bg-dark-card p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex justify-between items-center shadow-sm hover:border-red-200 transition-colors">
                                 <div>
                                     <h4 className="font-bold text-gray-800 dark:text-white">{isAr ? c.nameAr : c.nameEn}</h4>
-                                    <span className="text-xs font-mono text-gray-500">{c.code}</span>
+                                    <span className="text-xs font-mono text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded mt-1 inline-block">{c.code}</span>
                                 </div>
-                                <button onClick={() => handleWithdraw(c)} className="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-600 hover:text-white transition border border-red-100">{t.withdrawBtn}</button>
+                                <button onClick={() => handleWithdraw(c)} className="bg-red-50 text-red-600 px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-red-600 hover:text-white transition border border-red-100 active:scale-95 flex items-center gap-2">
+                                    <MinusCircle size={16}/> {t.withdrawBtn}
+                                </button>
                             </div>
                         ))}
                     </div>
@@ -3187,8 +3585,142 @@
             );
         };
 
-        // --- باقي الكود الأساسي كما هو بدون تغيير (الملف الشخصي والصفحة الرئيسية والملاحة) ---
-        
+        // 16. التسجيل الإلكتروني مع Stepper
+        const RegistrationPage = ({ onBack, lang }) => {
+            const steps = [
+                { id: 1, label: 'تحديث البيانات', status: 'completed' },
+                { id: 2, label: 'اختيار الرغبات', status: 'current' },
+                { id: 3, label: 'تأكيد الجدول', status: 'pending' },
+                { id: 4, label: 'طباعة', status: 'pending' }
+            ];
+
+            // حالة المؤقت (بدءاً من 2 يوم و 14 ساعة كمثال)
+            const [timeLeft, setTimeLeft] = useState({ days: 2, hours: 14, minutes: 30, seconds: 59 });
+
+            useEffect(() => {
+                const timer = setInterval(() => {
+                    setTimeLeft(prev => {
+                        if (prev.seconds > 0) return { ...prev, seconds: prev.seconds - 1 };
+                        if (prev.minutes > 0) return { ...prev, minutes: prev.minutes - 1, seconds: 59 };
+                        if (prev.hours > 0) return { ...prev, hours: prev.hours - 1, minutes: 59, seconds: 59 };
+                        if (prev.days > 0) return { ...prev, days: prev.days - 1, hours: 23, minutes: 59, seconds: 59 };
+                        return prev; // انتهى الوقت
+                    });
+                }, 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            return (
+                <div className="animate-fade-in space-y-6">
+                    <HeaderPage title="التسجيل الإلكتروني" onBack={onBack} lang={lang} />
+
+                    {/* عداد الوقت المتبقي */}
+                    <div className="bg-gradient-to-l from-primary to-teal-800 rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                        
+                        <div className="relative z-10 text-center md:text-right">
+                            <h3 className="text-xl font-bold mb-1 flex items-center justify-center md:justify-start gap-2">
+                                <Clock className="animate-pulse" size={24}/> ينتهي التسجيل خلال
+                            </h3>
+                            <p className="text-teal-100 text-sm opacity-90">بادر بتسجيل مقرراتك قبل انتهاء الفترة المحددة</p>
+                        </div>
+
+                        <div className="relative z-10 flex gap-4">
+                            {/* الأيام (يمين لأن الاتجاه RTL) */}
+                            <div className="flex flex-col items-center bg-white/10 backdrop-blur-md rounded-lg p-3 min-w-[70px] border border-white/10 shadow-inner">
+                                <span className="text-3xl font-bold font-mono">{timeLeft.days}</span>
+                                <span className="text-[10px] uppercase text-teal-200 font-bold">يوم</span>
+                            </div>
+                            <div className="flex flex-col items-center bg-white/10 backdrop-blur-md rounded-lg p-3 min-w-[70px] border border-white/10 shadow-inner">
+                                <span className="text-3xl font-bold font-mono">{timeLeft.hours}</span>
+                                <span className="text-[10px] uppercase text-teal-200 font-bold">ساعة</span>
+                            </div>
+                            <div className="flex flex-col items-center bg-white/10 backdrop-blur-md rounded-lg p-3 min-w-[70px] border border-white/10 shadow-inner">
+                                <span className="text-3xl font-bold font-mono">{timeLeft.minutes}</span>
+                                <span className="text-[10px] uppercase text-teal-200 font-bold">دقيقة</span>
+                            </div>
+                            <div className="flex flex-col items-center bg-white/10 backdrop-blur-md rounded-lg p-3 min-w-[70px] border border-white/10 shadow-inner">
+                                <span className="text-3xl font-bold font-mono">{timeLeft.seconds}</span>
+                                <span className="text-[10px] uppercase text-teal-200 font-bold">ثانية</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Stepper */}
+                    <div className="bg-white dark:bg-dark-card p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between relative">
+                            <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-gray-200 dark:bg-gray-700 -z-0"></div>
+                            {steps.map((step, idx) => (
+                                <div key={step.id} className="relative z-10 flex flex-col items-center bg-white dark:bg-dark-card px-2">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 text-sm font-bold transition-colors ${step.status === 'completed' ? 'bg-primary border-primary text-white' : step.status === 'current' ? 'border-primary text-primary' : 'border-gray-300 text-gray-300'}`}>
+                                        {step.status === 'completed' ? <Check size={16}/> : step.id}
+                                    </div>
+                                    <span className={`text-xs mt-2 font-bold ${step.status === 'current' ? 'text-primary' : 'text-gray-500'}`}>{step.label}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 flex gap-3">
+                        <AlertCircle className="text-blue-600 shrink-0" />
+                        <div>
+                            <h4 className="font-bold text-blue-800 dark:text-blue-200 text-sm">تنبيه هام</h4>
+                            <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">يرجى التأكد من عدم وجود تعارض في الاختبارات النهائية قبل تأكيد الجدول.</p>
+                        </div>
+                    </div>
+
+                    <div className="text-center py-20 bg-gray-50 rounded-2xl border border-dashed border-gray-300">
+                        <Layers size={48} className="mx-auto text-gray-300 mb-4"/>
+                        <p className="text-gray-500 font-bold">بوابة التسجيل متاحة حالياً لتعديل الرغبات</p>
+                        <button className="mt-4 bg-primary text-white px-6 py-2 rounded-lg font-bold hover:bg-teal-700 transition">ابدأ التسجيل</button>
+                    </div>
+                </div>
+            );
+        };
+
+        // 17. الطلبات الأكاديمية (RequestsPage OLD - can be removed or kept as generic view)
+        const RequestsPage = ({ onBack, lang }) => {
+            const requests = [
+                { id: 1023, type: 'إعادة قيد', date: '2023-12-01', status: 'pending', desc: 'طلب إعادة قيد للفصل الدراسي الثاني' },
+                { id: 1011, type: 'تغيير تخصص', date: '2023-09-15', status: 'rejected', desc: 'التحويل من هندسة الحاسب إلى هندسة البرمجيات' },
+                { id: 985, type: 'اعتذار عن فصل', date: '2023-05-20', status: 'approved', desc: 'الاعتذار عن الفصل الصيفي لظروف صحية' },
+            ];
+
+            const getStatusChip = (status) => {
+                switch(status) {
+                    case 'approved': return <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-bold flex items-center gap-1"><CheckCircle2 size={12}/> مقبول</span>;
+                    case 'rejected': return <span className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-bold flex items-center gap-1"><X size={12}/> مرفوض</span>;
+                    default: return <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-bold flex items-center gap-1"><Clock size={12}/> قيد الدراسة</span>;
+                }
+            };
+
+            return (
+                <div className="animate-fade-in space-y-6">
+                    <HeaderPage title="الطلبات الأكاديمية" onBack={onBack} lang={lang} extra={<button className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"><PlusCircle size={16}/> طلب جديد</button>} />
+                    <div className="space-y-4">
+                        {requests.map(req => (
+                            <div key={req.id} className="bg-white dark:bg-dark-card p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition">
+                                <div className="flex justify-between items-start mb-2">
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="font-bold text-gray-800 dark:text-white">{req.type}</h3>
+                                            <span className="text-xs text-gray-400">#{req.id}</span>
+                                        </div>
+                                        <p className="text-sm text-gray-500 mt-1">{req.desc}</p>
+                                    </div>
+                                    {getStatusChip(req.status)}
+                                </div>
+                                <div className="border-t border-gray-100 dark:border-gray-700 mt-3 pt-3 flex justify-between items-center text-xs text-gray-400">
+                                    <span>تاريخ الطلب: {req.date}</span>
+                                    <button className="text-primary font-bold hover:underline">عرض التفاصيل</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+        // 18. الملف الشخصي (محدث ليشمل كافة الأقسام الجديدة)
         const PersonalPage = ({ onBack, activeView, lang }) => {
             const isAr = lang === 'ar';
             const [imgSrc, setImgSrc] = useState(null);
@@ -3289,6 +3821,7 @@
                 return txt;
             }
 
+            // بيانات المكافآت التاريخية
             const rewardsHistory = [
                 { id: 1, type: 'monthly', month: 'شوال 1445', amount: '990', status: 'deposited', date: '1445/10/25', isBonus: false },
                 { id: 2, type: 'monthly', month: 'رمضان 1445', amount: '990', status: 'deposited', date: '1445/09/25', isBonus: false },
@@ -3300,6 +3833,7 @@
                 { id: 8, type: 'monthly', month: 'ربيع الأول 1445', amount: '990', status: 'deposited', date: '1445/03/25', isBonus: false },
                 { id: 9, type: 'monthly', month: 'صفر 1445', amount: '990', status: 'deposited', date: '1445/02/25', isBonus: false },
                 { id: 10, type: 'monthly', month: 'محرم 1445', amount: '990', status: 'deposited', date: '1445/01/25', isBonus: false },
+                // سنة 1444
                 { id: 11, type: 'excellence', month: 'ذو الحجة 1444', amount: '1000', status: 'deposited', date: '1444/12/20', isBonus: true },
                 { id: 12, type: 'monthly', month: 'ذو الحجة 1444', amount: '990', status: 'deposited', date: '1444/12/25', isBonus: false },
                 { id: 13, type: 'monthly', month: 'ذو القعدة 1444', amount: '990', status: 'deposited', date: '1444/11/25', isBonus: false },
@@ -3318,6 +3852,7 @@
                     <HeaderPage title={t.titles[activeView]} onBack={onBack} lang={lang} />
                     {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
+                    {/* 1. رفع الصورة الشخصية */}
                     {activeView === 'id-photo' && (
                         <div className="bg-white dark:bg-dark-card p-8 rounded-2xl border border-gray-200 dark:border-gray-700 text-center shadow-sm">
                             <div className="relative w-40 h-40 mx-auto mb-6 group">
@@ -3339,6 +3874,7 @@
                         </div>
                     )}
 
+                    {/* 2. السجل المالي (شامل) */}
                     {activeView === 'finance' && (
                         <div className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -3371,6 +3907,7 @@
                         </div>
                     )}
 
+                    {/* 3. المكافآت (سجل تاريخي كامل) */}
                     {activeView === 'rewards' && (
                         <div className="space-y-4">
                             <div className="bg-gradient-to-br from-gold to-yellow-600 p-6 rounded-2xl text-white shadow-lg relative overflow-hidden flex justify-between items-center">
@@ -3410,8 +3947,10 @@
                         </div>
                     )}
 
+                    {/* 4. العقوبات */}
                     {activeView === 'penalties' && (
                         <div className="space-y-6">
+                            {/* حالة نظيفة */}
                             <div className="bg-white dark:bg-dark-card p-10 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm text-center">
                                 <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <ShieldAlert size={40}/>
@@ -3420,6 +3959,7 @@
                                 <p className="text-gray-500 mt-2">{t.penalties.cleanDesc}</p>
                             </div>
 
+                            {/* مثال لجدول فارغ (أو ممتلئ إذا أردت إظهار عقوبات) */}
                             <div className="opacity-50 pointer-events-none grayscale" aria-hidden="true">
                                 <h4 className="text-sm font-bold text-gray-400 mb-2">{t.penalties.archive}</h4>
                                 <div className="bg-white dark:bg-dark-card rounded-xl border border-gray-200 dark:border-gray-700 p-4">
@@ -3432,6 +3972,7 @@
                         </div>
                     )}
 
+                    {/* 5. البدلات */}
                     {activeView === 'allowances' && (
                         <div className="bg-white dark:bg-dark-card rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
                              <table className="w-full text-right text-sm">
@@ -3447,6 +3988,7 @@
                         </div>
                     )}
                     
+                    {/* 6. الوثائق والإفادات */}
                     {activeView === 'docs' && (
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -3478,6 +4020,7 @@
             );
         };
 
+        // 19. صفحة حسابي (User Account)
         const UserAccountPage = ({ onBack, lang }) => {
             const user = {
                 name: "فيصل عبدالله الخالد",
@@ -3492,14 +4035,17 @@
                 advisorEmail: "advisor@uqu.edu.sa"
             };
 
-            const handleEmailAdvisor = () => {
-                window.location.href = `mailto:${user.advisorEmail}`;
+            const handleEmailAdvisor = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                window.open(`mailto:${user.advisorEmail}`, '_blank');
             };
 
             return (
                 <div className="animate-fade-in space-y-6">
                     <HeaderPage title="حسابي" onBack={onBack} lang={lang} />
                     
+                    {/* بطاقة الطالب */}
                     <div className="bg-white dark:bg-dark-card rounded-2xl border border-gray-200 dark:border-gray-700 p-8 shadow-sm flex flex-col items-center text-center relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-primary to-teal-800"></div>
                         <div className="relative z-10 mt-4">
@@ -3512,6 +4058,7 @@
                         </div>
                     </div>
 
+                    {/* البيانات الأكاديمية */}
                     <div className="bg-white dark:bg-dark-card rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
                         <div className="bg-gray-50 dark:bg-gray-800/50 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                             <h3 className="font-bold text-gray-800 dark:text-white flex items-center gap-2"><GraduationCap size={20} className="text-primary"/> البيانات الأكاديمية</h3>
@@ -3536,6 +4083,7 @@
                         </div>
                     </div>
 
+                    {/* المرشد الأكاديمي */}
                     <div className="bg-white dark:bg-dark-card rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center border border-blue-100 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400">
@@ -3548,6 +4096,7 @@
                         </div>
                         <button 
                             onClick={handleEmailAdvisor}
+                            type="button"
                             className="flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-teal-700 transition shadow-lg shadow-primary/20 active:scale-95"
                         >
                             <Send size={16} className="rotate-180" />
@@ -3555,6 +4104,7 @@
                         </button>
                     </div>
 
+                    {/* إعدادات الحساب */}
                     <div className="bg-white dark:bg-dark-card rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
                         <div className="bg-gray-50 dark:bg-gray-800/50 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                             <h3 className="font-bold text-gray-800 dark:text-white flex items-center gap-2"><Lock size={20} className="text-primary"/> إعدادات الأمان</h3>
@@ -3597,6 +4147,7 @@
             );
         };
 
+        // 19. الرئيسية (Home View)
         const HomeView = ({ t, openService, lang }) => {
             const isAr = lang === 'ar';
             const completed = studentData.completedHours;
@@ -3626,8 +4177,22 @@
                 { name: 'General Physics', absencePct: 16, excused: false },      
             ];
 
+            // NEW: Deadlines Tokens
+            const deadlines = isAr ? [
+                { title: "إضافة مقرر (القسم)", time: "يغلق بعد يومين", icon: <PlusCircle size={16}/>, color: "text-blue-700 bg-blue-50 border-blue-200 dark:text-blue-300 dark:bg-blue-900/30 dark:border-blue-800", route: 'dept-add' },
+                { title: "تغيير شعبة (القسم)", time: "يغلق بعد يومين", icon: <RefreshCw size={16}/>, color: "text-indigo-700 bg-indigo-50 border-indigo-200 dark:text-indigo-300 dark:bg-indigo-900/30 dark:border-indigo-800", route: 'dept-change' },
+                { title: "طلب تغيير التخصص", time: "يغلق غداً", icon: <Layers size={16}/>, color: "text-red-700 bg-red-50 border-red-200 dark:text-red-300 dark:bg-red-900/30 dark:border-red-800", route: 'major-change-new' },
+                { title: "الحركات الأكاديمية", time: "يغلق بعد 5 أيام", icon: <FileText size={16}/>, color: "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-300 dark:bg-amber-900/30 dark:border-amber-800", route: 'academic-action-new' }
+            ] : [
+                { title: "Dept Add Course", time: "Closes in 2 days", icon: <PlusCircle size={16}/>, color: "text-blue-700 bg-blue-50 border-blue-200 dark:text-blue-300 dark:bg-blue-900/30 dark:border-blue-800", route: 'dept-add' },
+                { title: "Dept Change Sec", time: "Closes in 2 days", icon: <RefreshCw size={16}/>, color: "text-indigo-700 bg-indigo-50 border-indigo-200 dark:text-indigo-300 dark:bg-indigo-900/30 dark:border-indigo-800", route: 'dept-change' },
+                { title: "Major Change", time: "Closes tomorrow", icon: <Layers size={16}/>, color: "text-red-700 bg-red-50 border-red-200 dark:text-red-300 dark:bg-red-900/30 dark:border-red-800", route: 'major-change-new' },
+                { title: "Academic Actions", time: "Closes in 5 days", icon: <FileText size={16}/>, color: "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-300 dark:bg-amber-900/30 dark:border-amber-800", route: 'academic-action-new' }
+            ];
+
             return (
                 <div className="space-y-8 animate-fade-in">
+                    {/* Persistent Notification Banner */}
                     <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 p-4 rounded-r-xl shadow-sm flex items-start gap-4">
                         <div className="p-2.5 bg-amber-100 dark:bg-amber-800 rounded-full text-amber-600 dark:text-amber-200 shrink-0">
                             <Bell size={24} className="animate-pulse"/>
@@ -3646,6 +4211,24 @@
                             <ActionCard icon={<Calendar size={24}/>} title={t.schedule} onClick={() => openService('schedule')} />
                             <ActionCard icon={<FileText size={24}/>} title={t.results} onClick={() => openService('results')} color="gold" />
                             <ActionCard icon={<RefreshCw size={24}/>} title={t.addDrop} onClick={() => openService('addDrop')} color="blue" />
+                        </div>
+                    </div>
+
+                    {/* NEW: Deadlines Tokens Section */}
+                    <div>
+                        <h3 className="text-sm font-bold text-gray-400 uppercase mb-3 tracking-wider flex items-center gap-2">
+                            <div className="w-1 h-4 bg-red-500 rounded-full"></div> {isAr ? "مواعيد تنتهي قريباً" : "Expiring Soon"}
+                        </h3>
+                        <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar w-full">
+                            {deadlines.map((item, idx) => (
+                                <button key={idx} onClick={() => openService(item.route)} className={`flex-none flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-transform hover:-translate-y-1 active:scale-95 shadow-sm ${item.color}`}>
+                                    <div className="bg-white/60 dark:bg-black/20 p-2 rounded-lg backdrop-blur-sm">{item.icon}</div>
+                                    <div className={`text-left ${isAr ? 'text-right' : ''}`}>
+                                        <h4 className="font-bold text-[12px] leading-tight">{item.title}</h4>
+                                        <span className="text-[10px] flex items-center gap-1 font-medium opacity-80 mt-0.5"><Clock size={10}/> {item.time}</span>
+                                    </div>
+                                </button>
+                            ))}
                         </div>
                     </div>
 
@@ -3749,41 +4332,56 @@
             const [isReaderActive, setIsReaderActive] = useState(false);
             const [settingsOpen, setSettingsOpen] = useState(false);
             
+            // --- New Accessibility States ---
             const [reduceMotion, setReduceMotion] = useState(false);
             const [highlightLinks, setHighlightLinks] = useState(false);
 
             useEffect(() => { document.documentElement.classList.toggle('dark', darkMode); }, [darkMode]);
+            // IMPORTANT: Ensure correct directory switching
             useEffect(() => { document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'; }, [lang]);
+            // Apply global font scaling
             useEffect(() => { document.documentElement.style.fontSize = `${zoomLevel}%`; }, [zoomLevel]);
 
+            // Apply Reduce Motion
             useEffect(() => {
                 if (reduceMotion) document.documentElement.classList.add('reduce-motion');
                 else document.documentElement.classList.remove('reduce-motion');
             }, [reduceMotion]);
 
+            // Apply Highlight Links
             useEffect(() => {
                 if (highlightLinks) document.documentElement.classList.add('highlight-links');
                 else document.documentElement.classList.remove('highlight-links');
             }, [highlightLinks]);
 
+            // Click-to-read logic (القارئ الصوتي عند الضغط على النصوص)
             useEffect(() => {
                 const handleScreenClick = (e) => {
                     if (!isReaderActive) return;
+                    
+                    // إيقاف أي قراءة سابقة
                     window.speechSynthesis.cancel(); 
+                    
+                    // جلب النص الخاص بالعنصر الذي تم الضغط عليه تحديداً
                     const textToRead = e.target.innerText || e.target.textContent;
+                    
                     if (textToRead && textToRead.trim() !== '') {
                         const utterance = new SpeechSynthesisUtterance(textToRead.trim());
                         utterance.lang = lang === 'ar' ? 'ar-SA' : 'en-US';
-                        utterance.rate = 0.9;
+                        utterance.rate = 0.9; // سرعة قراءة مناسبة للوضوح
+                        
                         window.speechSynthesis.speak(utterance);
                     }
                 };
 
                 if (isReaderActive) {
+                    // تفعيل مراقب الضغطات على مستوى الصفحة
                     document.addEventListener('click', handleScreenClick);
                 } else {
+                    // إيقاف القراءة تماماً عند إغلاق الميزة
                     window.speechSynthesis.cancel();
                 }
+
                 return () => {
                     document.removeEventListener('click', handleScreenClick);
                 };
@@ -3795,14 +4393,17 @@
 
             const t = translations[lang];
             const isAr = lang === 'ar';
+
             const goHome = () => setView('home');
 
+            // --- Menu Structure Updated ---
             const menuItems = [
+                // Analytics item removed from here to be placed as a main link
                 {
                     id: 'academic', icon: <GraduationCap size={20}/>,
                     subItems: [
                         { id: 'schedule' },
-                        { id: 'academic-events' },
+                        { id: 'academic-events' }, // Added here
                         { id: 'exams' }, 
                         { id: 'plan' },
                         { id: 'results' },
@@ -3818,7 +4419,7 @@
                         { id: 'dept-add' },
                         { id: 'dept-change' },
                         { id: 'dept-drop' },
-                        { id: 'dept-multi' },
+                        { id: 'dept-multi' }, // NEW ITEM HERE
                         { id: 'reg-requests' },
                         { id: 'withdraw' }
                     ]
@@ -3830,8 +4431,8 @@
                         { id: 'academic-action-view' },
                         { id: 'major-change-new' },
                         { id: 'major-change-view' },
-                        { id: 'recommendation-new' },
-                        { id: 'recommendation-view' },
+                        { id: 'recommendation-new' }, // NEW ITEM
+                        { id: 'recommendation-view' }, // NEW ITEM
                         { id: 'office-hours-book' },
                         { id: 'office-hours-view' }
                     ]
@@ -3853,47 +4454,54 @@
                 setActiveCategory(activeCategory === id ? null : id);
             };
 
+            // Shared handler for notifications
             const openNotifications = () => setView('notifications');
 
             const renderContent = () => {
                 switch(view) {
                     case 'student-dashboard': return <StudentDashboardPage onBack={goHome} lang={lang} />; 
-                    case 'notifications': return <NotificationsPage onBack={goHome} lang={lang} />;
+                    case 'notifications': return <NotificationsPage onBack={goHome} lang={lang} />; // Added Route
                     case 'academic-events': return <AcademicEventsPage onBack={goHome} lang={lang} />;
                     case 'schedule': return <SchedulePage onBack={goHome} t={t} lang={lang} />;
                     case 'plan': return <PlanPage onBack={goHome} t={t} lang={lang} />;
                     case 'results': return <ResultsPage onBack={goHome} t={t} lang={lang} onOpenNotifications={openNotifications} />;
                     case 'addDrop': return <AddDropPage onBack={goHome} t={t} lang={lang} />;
                     
+                    // Registration Views
                     case 'offered-courses': return <OfferedCoursesPage onBack={goHome} lang={lang} />;
                     case 'dept-add': return <DepartmentRequestPage onBack={goHome} type="add" lang={lang} />;
                     case 'dept-change': return <DepartmentRequestPage onBack={goHome} type="change" lang={lang} />;
                     case 'dept-drop': return <DepartmentRequestPage onBack={goHome} type="drop" lang={lang} />;
-                    case 'dept-multi': return <MultiRequestPage onBack={goHome} lang={lang} />;
+                    case 'dept-multi': return <MultiRequestPage onBack={goHome} lang={lang} />; // NEW ROUTE
                     case 'reg-requests': return <RegistrationRequestsPage onBack={goHome} lang={lang} />;
                     case 'withdraw': return <WithdrawPage onBack={goHome} lang={lang} />;
 
+                    // Academic Views
                     case 'exams': return <ExamsPage onBack={goHome} lang={lang} />;
+                    case 'e-reg': return <RegistrationPage onBack={goHome} lang={lang} />;
                     case 'absences': return <AbsencesPage onBack={goHome} lang={lang} />;
                     case 'record': return <AcademicRecordPage onBack={goHome} lang={lang} t={t} onOpenNotifications={openNotifications} />; 
                     
+                    // Requests Views
                     case 'academic-action-new': return <NewAcademicActionPage onBack={goHome} lang={lang} />;
                     case 'academic-action-view': return <ViewAcademicActionsPage onBack={goHome} lang={lang} />;
                     case 'major-change-new': return <MajorChangeRequestPage onBack={goHome} lang={lang} />;
                     case 'major-change-view': return <ViewMajorChangeRequestsPage onBack={goHome} lang={lang} />;
-                    case 'recommendation-new': return <NewRecommendationPage onBack={goHome} lang={lang} />;
-                    case 'recommendation-view': return <ViewRecommendationsPage onBack={goHome} lang={lang} />;
+                    case 'recommendation-new': return <NewRecommendationPage onBack={goHome} lang={lang} />; // NEW ROUTE
+                    case 'recommendation-view': return <ViewRecommendationsPage onBack={goHome} lang={lang} />; // NEW ROUTE
                     case 'office-hours-book': return <OfficeHoursBookPage onBack={goHome} lang={lang} />;
                     case 'office-hours-view': return <OfficeHoursViewPage onBack={goHome} lang={lang} />;
 
+                    // Personal Views
                     case 'id-photo': return <PersonalPage onBack={goHome} activeView="id-photo" lang={lang} />;
                     case 'finance': return <PersonalPage onBack={goHome} activeView="finance" lang={lang} />;
                     case 'rewards': return <PersonalPage onBack={goHome} activeView="rewards" lang={lang} />;
                     case 'penalties': return <PersonalPage onBack={goHome} activeView="penalties" lang={lang} />;
                     case 'allowances': return <PersonalPage onBack={goHome} activeView="allowances" lang={lang} />;
                     case 'docs': return <PersonalPage onBack={goHome} activeView="docs" lang={lang} />;
-                    case 'profile': return <PersonalPage onBack={goHome} activeView="id-photo" lang={lang} />;
+                    case 'profile': return <PersonalPage onBack={goHome} activeView="id-photo" lang={lang} />; // Fallback
                     
+                    // NEW: User Account View
                     case 'user-account': return <UserAccountPage onBack={goHome} lang={lang} />;
                     
                     default: return <HomeView t={t} openService={setView} lang={lang} />;
@@ -3902,6 +4510,7 @@
 
             return (
                 <div className="min-h-screen relative flex">
+                    {/* Sidebar */}
                     <aside className={`md:flex flex-col w-72 bg-white dark:bg-dark-card border-l dark:border-l-0 dark:border-r border-gray-200 dark:border-gray-800 fixed top-0 bottom-0 z-40 shadow-sm transition-all duration-300 ${isAr ? 'right-0 border-l' : 'left-0 border-r'} ${menuOpen ? 'translate-x-0' : (isAr ? 'translate-x-full' : '-translate-x-full')} md:translate-x-0`}>
                         <div className="p-8 flex items-center gap-3 mb-2">
                             <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg"><GraduationCap size={28}/></div>
@@ -3918,12 +4527,14 @@
                         </div>
 
                         <nav className="flex-1 px-4 space-y-1 overflow-y-auto pb-4 custom-scrollbar">
+                            {/* Menu Items Rendering */}
                             {menuItems.map(cat => (
                                 <div key={cat.id} className="rounded-lg overflow-hidden">
                                     <button 
                                         onClick={() => toggleCategory(cat.id)}
                                         className={`w-full flex items-center justify-between px-4 py-3 text-sm font-bold transition-all ${activeCategory === cat.id ? 'bg-gray-50 dark:bg-gray-800/50 text-primary' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
                                     >
+                                        {/* Use translation key for category title */}
                                         <div className="flex items-center gap-3">{cat.icon} {t[cat.id]}</div>
                                         <ChevronDown size={16} className={`transition-transform duration-300 ${activeCategory === cat.id ? 'rotate-180' : ''}`}/>
                                     </button>
@@ -3937,6 +4548,7 @@
                                                     className={`w-full text-right text-xs font-bold py-2 px-2 rounded-lg transition-colors flex items-center gap-2 ${view === item.id ? 'text-primary bg-primary/5' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'}`}
                                                 >
                                                     <div className={`w-1.5 h-1.5 rounded-full ${view === item.id ? 'bg-primary' : 'bg-gray-300'}`}></div>
+                                                    {/* Use translation key for sub-item label */}
                                                     {t[item.id]}
                                                 </button>
                                             ))}
@@ -3946,6 +4558,7 @@
                             ))}
                         </nav>
 
+                        {/* User Profile Mini Footer with onClick */}
                         <div className="p-4 border-t border-gray-100 dark:border-gray-800">
                              <button 
                                 onClick={() => { setView('user-account'); if(window.innerWidth < 768) setMenuOpen(false); }}
@@ -3962,6 +4575,7 @@
                         </div>
                     </aside>
                     
+                    {/* Mobile Overlay */}
                     {menuOpen && <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setMenuOpen(false)}></div>}
 
                     <main className={`flex-1 w-full pb-20 md:pb-10 transition-all duration-300 ${isAr ? 'md:mr-72' : 'md:ml-72'}`}>
@@ -3969,6 +4583,16 @@
                             <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden p-2 hover:bg-gray-100 rounded-lg"><Menu size={24} className="text-gray-600"/></button>
                             <h2 className="text-xl font-bold text-gray-800 dark:text-white">{t[view] || t.dashboard}</h2>
                             <div className="flex gap-2 sm:gap-3 items-center relative">
+                                
+                                {/* Language Toggle Button */}
+                                <button 
+                                    onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')} 
+                                    className="px-2.5 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg text-xs md:text-sm font-bold text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600 transition shadow-sm flex items-center justify-center font-mono"
+                                    title={lang === 'ar' ? 'Switch to English' : 'التبديل للعربية'}
+                                >
+                                    {lang === 'ar' ? 'En' : 'عربي'}
+                                </button>
+
                                 <NotificationBell onClick={openNotifications} /> 
                                 
                                 <div className="relative">
@@ -3989,18 +4613,21 @@
                                                     {isAr ? 'إمكانية الوصول' : 'Accessibility'}
                                                 </h4>
                                                 <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+                                                    {/* Language */}
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-xs font-bold text-gray-600 dark:text-gray-300">{isAr ? 'اللغة' : 'Language'}</span>
                                                         <button onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')} className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs font-bold text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm border border-gray-200 dark:border-gray-600">
                                                             {lang === 'ar' ? 'English' : 'العربية'}
                                                         </button>
                                                     </div>
+                                                    {/* Dark Mode */}
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-xs font-bold text-gray-600 dark:text-gray-300">{isAr ? 'المظهر' : 'Theme'}</span>
                                                         <button onClick={() => setDarkMode(!darkMode)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-yellow-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm border border-gray-200 dark:border-gray-600">
                                                             {darkMode ? <Sun size={16}/> : <Moon size={16} className="text-gray-600 dark:text-gray-300"/>}
                                                         </button>
                                                     </div>
+                                                    {/* Font Size */}
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-xs font-bold text-gray-600 dark:text-gray-300">{isAr ? 'حجم الخط' : 'Font Size'} ({zoomLevel}%)</span>
                                                         <div className="flex gap-1.5">
@@ -4008,18 +4635,21 @@
                                                             <button onClick={() => setZoomLevel(prev => Math.max(prev - 10, 80))} className="p-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs font-bold w-8 h-8 flex items-center justify-center text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm border border-gray-200 dark:border-gray-600">A-</button>
                                                         </div>
                                                     </div>
+                                                    {/* Screen Reader */}
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-xs font-bold text-gray-600 dark:text-gray-300">{isAr ? 'القارئ الصوتي' : 'Screen Reader'}</span>
                                                         <button onClick={toggleSpeech} className={`p-2 rounded-lg transition-all shadow-sm border ${isReaderActive ? 'bg-primary text-white border-primary' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
                                                             {isReaderActive ? <Volume2 size={16} className="animate-pulse"/> : <VolumeX size={16}/>}
                                                         </button>
                                                     </div>
+                                                    {/* Highlight Links */}
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-xs font-bold text-gray-600 dark:text-gray-300">{isAr ? 'تمييز الأزرار والروابط' : 'Highlight Links'}</span>
                                                         <button onClick={() => setHighlightLinks(!highlightLinks)} className={`p-2 rounded-lg transition-all shadow-sm border ${highlightLinks ? 'bg-primary text-white border-primary' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
                                                             <MousePointerClick size={16}/>
                                                         </button>
                                                     </div>
+                                                    {/* Reduce Motion */}
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-xs font-bold text-gray-600 dark:text-gray-300">{isAr ? 'إيقاف الحركات' : 'Reduce Motion'}</span>
                                                         <button onClick={() => setReduceMotion(!reduceMotion)} className={`p-2 rounded-lg transition-all shadow-sm border ${reduceMotion ? 'bg-primary text-white border-primary' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
@@ -4034,7 +4664,8 @@
                             </div>
                         </header>
                         <div id="main-content" className="p-6 max-w-7xl mx-auto">{renderContent()}</div>
-                        <Chatbot t={t} />
+                        {/* Chatbot integrated globally */}
+                        <Chatbot t={t} lang={lang} />
                     </main>
                 </div>
             );
