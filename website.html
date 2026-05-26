@@ -35,6 +35,21 @@
         /* Chatbot Animations */
         .chat-enter { animation: slideUp 0.3s ease-out forwards; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Accessibility Styles */
+        .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+        .highlight-links button, .highlight-links a, .highlight-links select, .highlight-links input {
+            outline: 2px solid #006771 !important;
+            outline-offset: 2px !important;
+        }
+        .dark .highlight-links button, .dark .highlight-links a, .dark .highlight-links select, .dark .highlight-links input {
+            outline-color: #008c99 !important;
+        }
     </style>
 
     <!-- Import Map for Stable Loading -->
@@ -63,8 +78,22 @@
             PlusCircle, MinusCircle, RefreshCw, Printer, Download,
             Link, Check, AlertTriangle, Moon, Sun, Send, MessageCircle, Lock,
             ChevronDown, ChevronLeft, CreditCard, FileBadge, Image as ImageIcon, 
-            Ban, Gift, ScrollText, Upload, Wallet, FileSignature, PieChart, Medal
+            Ban, Gift, ScrollText, Upload, Wallet, FileSignature, PieChart, Medal,
+            Volume2, VolumeX, CalendarCheck, Video, Accessibility, Trash2,
+            Activity, MousePointerClick
         } from 'lucide-react';
+
+        // --- Firebase Integration ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        const firebaseConfig = {
+            databaseURL: "https://yahya-b3b2c-default-rtdb.firebaseio.com/",
+            projectId: "yahya-b3b2c"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        // -----------------------------
 
         // --- Mock Data ---
         const studentData = {
@@ -100,6 +129,7 @@
                 'dept-add': 'إضافة مقرر (القسم)',
                 'dept-change': 'تغيير شعبة (القسم)',
                 'dept-drop': 'حذف مقرر (القسم)',
+                'dept-multi': 'طلب مزدوج / استبدال',
                 'reg-requests': 'طلبات التسجيل',
                 withdraw: 'انسحاب من مقرر',
                 // Requests Sub-items
@@ -107,6 +137,10 @@
                 'academic-action-view': 'عرض الحركات الأكاديمية',
                 'major-change-new': 'طلب تغيير تخصص',
                 'major-change-view': 'عرض طلبات تغيير التخصص',
+                'office-hours-book': 'حجز ساعات مكتبية',
+                'office-hours-view': 'مواعيدي المكتبية',
+                'recommendation-new': 'طلب رسالة توصية',
+                'recommendation-view': 'التوصيات الأكاديمية',
                 // Personal Sub-items
                 penalties: 'العقوبات',
                 rewards: 'المكافآت',
@@ -133,6 +167,7 @@
                 // New Notification
                 notificationTitle: "تنبيه هام: درجة غير مرصودة",
                 notificationBody: "لم يتم رصد درجة مقرر (نظم تشغيل) للفصل السابق. يرجى التواصل مع د. المهاد فوراً.",
+                'academic-events': 'الأحداث الأكاديمية',
             },
             en: {
                 welcome: "Welcome", 
@@ -173,6 +208,7 @@
                 'dept-add': 'Add Course (Dept Approval)',
                 'dept-change': 'Change Section (Dept Approval)',
                 'dept-drop': 'Drop Course (Dept Approval)',
+                'dept-multi': 'Multi-Request / Swap',
                 'reg-requests': 'Registration Requests',
                 withdraw: 'Course Withdrawal',
                 // Requests Sub-items
@@ -180,6 +216,10 @@
                 'academic-action-view': 'View Academic Actions',
                 'major-change-new': 'Request Major Change',
                 'major-change-view': 'View Major Change Requests',
+                'office-hours-book': 'Book Office Hours',
+                'office-hours-view': 'My Office Hours',
+                'recommendation-new': 'Request Recommendation',
+                'recommendation-view': 'Academic Recommendations',
                 // Personal Sub-items
                 penalties: 'Penalties & Violations', 
                 rewards: 'Rewards Record', 
@@ -209,6 +249,7 @@
                 // New Notification
                 notificationTitle: "Important Alert: Unrecorded Grade",
                 notificationBody: "Grade for (Operating Systems) from previous semester is not recorded. Please contact Dr. Al-Muhad immediately.",
+                'academic-events': 'Academic Events', // NEW Translation
             }
         };
 
@@ -240,8 +281,9 @@
         );
 
         // --- NEW: Chatbot Component ---
-        const Chatbot = ({ t }) => {
+        const Chatbot = ({ t, lang }) => {
             const [isOpen, setIsOpen] = useState(false);
+            const isAr = lang === 'ar';
             const [messages, setMessages] = useState([
                 { id: 1, text: "مرحباً بك يا فيصل! أنا سند، مساعدك الأكاديمي. كيف يمكنني خدمتك اليوم؟", sender: 'bot' }
             ]);
@@ -283,13 +325,13 @@
                 <>
                     <button 
                         onClick={() => setIsOpen(!isOpen)} 
-                        className={`fixed bottom-6 left-6 z-50 p-4 rounded-full shadow-lg transition-all duration-300 hover:scale-110 ${isOpen ? 'bg-red-500 rotate-90' : 'bg-primary animate-bounce'} text-white border-4 border-white dark:border-dark-bg`}
+                        className={`fixed bottom-6 ${isAr ? 'left-6' : 'right-6'} z-50 p-4 rounded-full shadow-lg transition-all duration-300 hover:scale-110 ${isOpen ? 'bg-red-500 rotate-90' : 'bg-primary animate-bounce'} text-white border-4 border-white dark:border-dark-bg`}
                     >
                         {isOpen ? <X size={24}/> : <MessageCircle size={28}/>}
                     </button>
 
                     {isOpen && (
-                        <div className="fixed bottom-24 left-6 z-40 w-[90vw] md:w-96 bg-white dark:bg-dark-card rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col chat-enter h-[500px] max-h-[70vh]">
+                        <div className={`fixed bottom-24 ${isAr ? 'left-6' : 'right-6'} z-40 w-[90vw] md:w-96 bg-white dark:bg-dark-card rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col chat-enter h-[500px] max-h-[70vh]`}>
                             <div className="bg-gradient-to-r from-primary to-teal-800 p-4 flex items-center gap-3 shadow-md">
                                 <div className="p-2 bg-white/20 rounded-full text-white backdrop-blur-sm shadow-inner"><User size={20}/></div>
                                 <div>
@@ -336,93 +378,129 @@
             </div>
         );
 
-        // --- NEW: Notification Bell Component ---
-        const NotificationBell = ({ t, onClick }) => {
+        // --- UPDATED: Notification Bell (Navigates to Page) ---
+        const NotificationBell = ({ onClick }) => {
             return (
-                <button 
-                    onClick={onClick} 
-                    className="p-2 relative bg-white dark:bg-dark-card rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition shadow-sm group"
-                >
-                    <Bell size={20} className="text-gray-600 dark:text-gray-300 group-hover:text-primary transition-colors"/>
-                    <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse border-2 border-white dark:border-dark-card"></span>
-                </button>
+                <div className="relative z-50">
+                    <button 
+                        onClick={onClick} 
+                        className="p-2 relative bg-white dark:bg-dark-card rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition shadow-sm group"
+                    >
+                        <Bell size={20} className="text-gray-600 dark:text-gray-300 group-hover:text-primary transition-colors"/>
+                        <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse border-2 border-white dark:border-dark-card"></span>
+                    </button>
+                </div>
             )
+        };
+
+        // --- NEW: Countdown Timer Component ---
+        const CountdownTimer = ({ title, description, initialDays = 2, lang }) => {
+            const isAr = lang === 'ar';
+            const t = {
+                day: isAr ? "يوم" : "Day",
+                hour: isAr ? "ساعة" : "Hour",
+                min: isAr ? "دقيقة" : "Min",
+                sec: isAr ? "ثانية" : "Sec"
+            };
+            const [timeLeft, setTimeLeft] = useState({ days: initialDays, hours: 14, minutes: 30, seconds: 59 });
+
+            useEffect(() => {
+                const timer = setInterval(() => {
+                    setTimeLeft(prev => {
+                        if (prev.seconds > 0) return { ...prev, seconds: prev.seconds - 1 };
+                        if (prev.minutes > 0) return { ...prev, minutes: prev.minutes - 1, seconds: 59 };
+                        if (prev.hours > 0) return { ...prev, hours: prev.hours - 1, minutes: 59, seconds: 59 };
+                        if (prev.days > 0) return { ...prev, days: prev.days - 1, hours: 23, minutes: 59, seconds: 59 };
+                        return prev;
+                    });
+                }, 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            return (
+                <div className="bg-gradient-to-l from-primary to-teal-800 rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden mb-6">
+                    <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                    
+                    <div className="relative z-10 text-center md:text-right flex-1">
+                        <h3 className="text-xl font-bold mb-1 flex items-center justify-center md:justify-start gap-2">
+                            <Clock className="animate-pulse" size={24}/> {title}
+                        </h3>
+                        {description && <p className="text-teal-100 text-sm opacity-90">{description}</p>}
+                    </div>
+
+                    <div className="relative z-10 flex gap-4 shrink-0 justify-center">
+                        <div className="flex flex-col items-center bg-white/10 backdrop-blur-md rounded-lg p-3 min-w-[65px] border border-white/10 shadow-inner">
+                            <span className="text-2xl md:text-3xl font-bold font-mono">{timeLeft.days}</span>
+                            <span className="text-[10px] uppercase text-teal-200 font-bold">{t.day}</span>
+                        </div>
+                        <div className="flex flex-col items-center bg-white/10 backdrop-blur-md rounded-lg p-3 min-w-[65px] border border-white/10 shadow-inner">
+                            <span className="text-2xl md:text-3xl font-bold font-mono">{timeLeft.hours}</span>
+                            <span className="text-[10px] uppercase text-teal-200 font-bold">{t.hour}</span>
+                        </div>
+                        <div className="flex flex-col items-center bg-white/10 backdrop-blur-md rounded-lg p-3 min-w-[65px] border border-white/10 shadow-inner">
+                            <span className="text-2xl md:text-3xl font-bold font-mono">{timeLeft.minutes}</span>
+                            <span className="text-[10px] uppercase text-teal-200 font-bold">{t.min}</span>
+                        </div>
+                        <div className="flex flex-col items-center bg-white/10 backdrop-blur-md rounded-lg p-3 min-w-[65px] border border-white/10 shadow-inner">
+                            <span className="text-2xl md:text-3xl font-bold font-mono">{timeLeft.seconds}</span>
+                            <span className="text-[10px] uppercase text-teal-200 font-bold">{t.sec}</span>
+                        </div>
+                    </div>
+                </div>
+            );
         };
 
         // --- NEW: Notifications Page ---
         const NotificationsPage = ({ onBack, lang }) => {
             const isAr = lang === 'ar';
-            
             const t = {
-                title: isAr ? "الإشعارات" : "Notifications",
-                markAll: isAr ? "تحديد الكل كمقروء" : "Mark all as read",
-                empty: isAr ? "لا توجد إشعارات جديدة" : "No new notifications",
-                new: isAr ? "جديد" : "New",
-                earlier: isAr ? "سابقاً" : "Earlier",
+                title: isAr ? "التنبيهات" : "Notifications",
+                markRead: isAr ? "تحديد الكل كمقروء" : "Mark all as read",
+                empty: isAr ? "لا توجد تنبيهات" : "No notifications",
                 now: isAr ? "الآن" : "Now",
-                minAgo: isAr ? "دقيقة" : "min ago",
-                hourAgo: isAr ? "ساعة" : "hour ago",
-                dayAgo: isAr ? "يوم" : "day ago",
+                minAgo: isAr ? "د" : "m",
+                hourAgo: isAr ? "س" : "h",
+                dayAgo: isAr ? "يوم" : "d"
             };
 
             const notifications = [
-                { id: 1, title: isAr ? "تنبيه هام: درجة غير مرصودة" : "Important Alert: Unrecorded Grade", body: isAr ? "لم يتم رصد درجة مقرر (نظم تشغيل) للفصل السابق. يرجى التواصل مع د. المهاد فوراً." : "Grade for (Operating Systems) is not recorded. Contact Dr. Al-Muhad.", type: 'alert', time: t.now, read: false },
-                { id: 2, title: isAr ? "تم رصد درجة: هندسة برمجيات" : "Grade Posted: Software Engineering", body: isAr ? "تم رصد درجة الاختبار النصفي لمقرر هندسة البرمجيات." : "Midterm grade for Software Engineering has been posted.", type: 'success', time: `15 ${t.minAgo}`, read: false },
-                { id: 3, title: isAr ? "تذكير: التسجيل المبكر" : "Reminder: Early Registration", body: isAr ? "يبدأ التسجيل المبكر للفصل القادم يوم الأحد القادم." : "Early registration for next semester starts next Sunday.", type: 'info', time: `2 ${t.hourAgo}`, read: true },
-                { id: 4, title: isAr ? "واجب جديد: تفاعل الإنسان والحاسب" : "New Assignment: HCI", body: isAr ? "تم إضافة واجب جديد، الموعد النهائي للتسليم هو الخميس." : "New assignment added, deadline is Thursday.", type: 'info', time: `1 ${t.dayAgo}`, read: true },
-                { id: 5, title: isAr ? "دعوة لورشة عمل" : "Workshop Invitation", body: isAr ? "يدعوكم نادي الحاسب لحضور ورشة عمل بعنوان 'مقدمة في الذكاء الاصطناعي'." : "Computer Club invites you to 'Intro to AI' workshop.", type: 'event', time: `2 ${t.dayAgo}`, read: true },
+                { id: 1, type: 'alert', title: isAr ? "تنبيه هام: درجة غير مرصودة" : "Important: Unrecorded Grade", body: isAr ? "لم يتم رصد درجة مقرر (نظم تشغيل) للفصل السابق." : "Grade for OS course not recorded.", time: t.now, read: false },
+                { id: 2, type: 'info', title: isAr ? "تذكير: موعد التسجيل" : "Reminder: Registration", body: isAr ? "يبدأ التسجيل للفصل القادم يوم الأحد." : "Registration starts on Sunday.", time: `2 ${t.hourAgo}`, read: false },
+                { id: 3, type: 'success', title: isAr ? "تم قبول الطلب" : "Request Approved", body: isAr ? "تمت الموافقة على طلب الاعتذار عن المقرر." : "Course withdrawal approved.", time: `1 ${t.dayAgo}`, read: true },
+                { id: 4, type: 'warning', title: isAr ? "إعادة كتابة الكتب" : "Book Return", body: isAr ? "يرجى إعادة الكتب المستعارة للمكتبة." : "Please return borrowed books.", time: `3 ${t.dayAgo}`, read: true }
             ];
 
             const getIcon = (type) => {
                 switch(type) {
                     case 'alert': return <AlertTriangle size={20} className="text-red-500"/>;
                     case 'success': return <CheckCircle2 size={20} className="text-green-500"/>;
-                    case 'event': return <Calendar size={20} className="text-purple-500"/>;
-                    default: return <Bell size={20} className="text-primary"/>;
-                }
-            };
-
-            const getBgColor = (type) => {
-                switch(type) {
-                    case 'alert': return 'bg-red-50 dark:bg-red-900/20';
-                    case 'success': return 'bg-green-50 dark:bg-green-900/20';
-                    case 'event': return 'bg-purple-50 dark:bg-purple-900/20';
-                    default: return 'bg-gray-50 dark:bg-gray-800/50';
+                    case 'warning': return <AlertCircle size={20} className="text-orange-500"/>;
+                    default: return <Bell size={20} className="text-blue-500"/>;
                 }
             };
 
             return (
                 <div className="animate-fade-in space-y-6">
-                    <HeaderPage 
-                        title={t.title} 
-                        onBack={onBack} 
-                        lang={lang} 
-                        extra={<button className="text-xs font-bold text-primary hover:bg-primary/5 px-3 py-1.5 rounded-lg transition">{t.markAll}</button>}
-                    />
+                    <HeaderPage title={t.title} onBack={onBack} lang={lang} extra={
+                        <button className="text-xs font-bold text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg transition">{t.markRead}</button>
+                    } />
                     
-                    <div className="space-y-4">
-                        {notifications.length > 0 ? (
-                            notifications.map((notif) => (
-                                <div key={notif.id} className={`p-4 rounded-2xl border transition-all hover:shadow-md flex gap-4 ${notif.read ? 'bg-white dark:bg-dark-card border-gray-100 dark:border-gray-700 opacity-80' : 'bg-white dark:bg-dark-card border-primary/20 dark:border-primary/20 shadow-sm ring-1 ring-primary/5'}`}>
-                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${getBgColor(notif.type)}`}>
-                                        {getIcon(notif.type)}
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="flex justify-between items-start mb-1">
-                                            <h4 className={`font-bold text-sm ${notif.read ? 'text-gray-700 dark:text-gray-300' : 'text-gray-900 dark:text-white'}`}>{notif.title}</h4>
-                                            <span className="text-[10px] text-gray-400 whitespace-nowrap">{notif.time}</span>
-                                        </div>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{notif.body}</p>
-                                    </div>
-                                    {!notif.read && <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>}
+                    <div className="space-y-3">
+                        {notifications.map(n => (
+                            <div key={n.id} className={`p-4 rounded-2xl border flex gap-4 transition-all hover:shadow-md ${n.read ? 'bg-white dark:bg-dark-card border-gray-100 dark:border-gray-700 opacity-80' : 'bg-white dark:bg-dark-card border-l-4 border-l-primary border-t-gray-100 border-r-gray-100 border-b-gray-100 dark:border-t-gray-700 dark:border-r-gray-700 dark:border-b-gray-700 shadow-sm'}`}>
+                                <div className={`p-3 rounded-full h-fit shrink-0 ${n.read ? 'bg-gray-100 dark:bg-gray-800 text-gray-400' : 'bg-gray-50 dark:bg-gray-800'}`}>
+                                    {getIcon(n.type)}
                                 </div>
-                            ))
-                        ) : (
-                            <div className="text-center py-20 text-gray-400 flex flex-col items-center">
-                                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4"><Bell size={24} className="opacity-50"/></div>
-                                <p>{t.empty}</p>
+                                <div className="flex-1">
+                                    <div className="flex justify-between items-start">
+                                        <h4 className={`font-bold text-sm ${n.read ? 'text-gray-700 dark:text-gray-300' : 'text-gray-900 dark:text-white'}`}>{n.title}</h4>
+                                        <span className="text-[10px] text-gray-400 font-medium whitespace-nowrap">{n.time}</span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{n.body}</p>
+                                </div>
+                                {!n.read && <div className="self-center w-2 h-2 rounded-full bg-red-500 shrink-0"></div>}
                             </div>
-                        )}
+                        ))}
                     </div>
                 </div>
             );
@@ -468,9 +546,11 @@
             const minGPA = 2.0;
 
             const points = gpaData.map((item, index) => {
-                // RTL: Calculate x from right to left
+                // Directional Calculation
                 const step = (chartWidth - (paddingX * 2)) / (gpaData.length - 1);
-                const xPos = chartWidth - paddingX - (index * step);
+                const xPos = isAr 
+                    ? (chartWidth - paddingX - (index * step)) 
+                    : (paddingX + (index * step));
                 
                 // Y Position inverted (SVG coords)
                 const yPos = chartHeight - paddingY - ((item.gpa - minGPA) / (maxGPA - minGPA)) * (chartHeight - (paddingY * 2));
@@ -700,6 +780,109 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- NEW: Academic Events Page ---
+        const AcademicEventsPage = ({ onBack, lang }) => {
+            const isAr = lang === 'ar';
+            const [now, setNow] = useState(new Date());
+
+            useEffect(() => {
+                const timer = setInterval(() => setNow(new Date()), 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            const t = {
+                title: isAr ? "الأحداث الأكاديمية" : "Academic Events",
+                assignment: isAr ? "واجب" : "Assignment",
+                project: isAr ? "مشروع" : "Project",
+                exam: isAr ? "اختبار" : "Exam",
+                remaining: isAr ? "الوقت المتبقي" : "Time Remaining",
+                days: isAr ? "يوم" : "d",
+                hours: isAr ? "س" : "h",
+                min: isAr ? "د" : "m",
+                sec: isAr ? "ث" : "s",
+                completed: isAr ? "منتهى" : "Completed",
+                due: isAr ? "موعد التسليم" : "Due Date"
+            };
+
+            const events = [
+                { id: 1, type: 'assignment', course: 'CS101', title: isAr ? 'واجب 1: الخوارزميات' : 'Homework 1: Algorithms', dueDate: new Date(Date.now() + 86400000 * 2 + 3600000 * 5) }, 
+                { id: 2, type: 'project', course: 'CS204', title: isAr ? 'مشروع الخوارزميات' : 'Algorithms Project', dueDate: new Date(Date.now() + 86400000 * 14) }, 
+                { id: 3, type: 'exam', course: 'MATH201', title: isAr ? 'الاختبار النصفي' : 'Midterm Exam', dueDate: new Date(Date.now() + 86400000 * 5 + 3600000 * 2) }, 
+                { id: 4, type: 'assignment', course: 'SE301', title: isAr ? 'تحليل المتطلبات' : 'Requirements Analysis', dueDate: new Date(Date.now() + 3600000 * 24) }, 
+            ];
+
+            const getTimeRemaining = (dueDate) => {
+                const total = Date.parse(dueDate) - Date.parse(now);
+                if (total <= 0) return null;
+                const seconds = Math.floor((total / 1000) % 60);
+                const minutes = Math.floor((total / 1000 / 60) % 60);
+                const hours = Math.floor((total / (1000 * 60 * 60)) % 24);
+                const days = Math.floor(total / (1000 * 60 * 60 * 24));
+                return { total, days, hours, minutes, seconds };
+            };
+
+            const getTypeConfig = (type) => {
+                switch(type) {
+                    case 'exam': return { icon: <AlertCircle size={18}/>, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-500' };
+                    case 'project': return { icon: <Layers size={18}/>, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'border-purple-500' };
+                    default: return { icon: <FileText size={18}/>, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-500' };
+                }
+            };
+
+            return (
+                <div className="animate-fade-in space-y-6">
+                    <HeaderPage title={t.title} onBack={onBack} lang={lang} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {events.map(event => {
+                            const remaining = getTimeRemaining(event.dueDate);
+                            const config = getTypeConfig(event.type);
+                            return (
+                                <div key={event.id} className="bg-white dark:bg-dark-card rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col group hover:border-primary transition-all duration-300 overflow-hidden relative">
+                                    <div className={`absolute top-0 ${isAr ? 'right-0' : 'left-0'} w-1 h-full ${config.border}`}></div>
+                                    
+                                    <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex-1">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <span className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 ${config.bg} ${config.color}`}>
+                                                {config.icon} {t[event.type]}
+                                            </span>
+                                            <span className="text-xs font-mono font-bold text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{event.course}</span>
+                                        </div>
+                                        <h3 className="font-bold text-lg text-gray-800 dark:text-white leading-tight group-hover:text-primary transition-colors">{event.title}</h3>
+                                        
+                                        <div className="mt-4 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                            <Calendar size={16} className="text-gray-400"/>
+                                            <span className="font-mono dir-ltr">{event.dueDate.toLocaleDateString()}</span>
+                                            <span className="text-gray-300 dark:text-gray-600">|</span>
+                                            <span className="font-mono dir-ltr">{event.dueDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="p-4 bg-gray-50 dark:bg-gray-800/50">
+                                        <p className="text-[10px] text-gray-500 font-bold mb-2 flex items-center gap-1.5"><Clock size={12}/> {t.remaining}</p>
+                                        {remaining ? (
+                                            <div className="flex gap-3 items-center font-mono text-gray-700 dark:text-gray-200 dir-ltr bg-white dark:bg-dark-card p-2 rounded-xl border border-gray-200 dark:border-gray-700 shadow-inner w-fit">
+                                                <div className="text-center min-w-[30px]"><span className="text-lg font-bold block leading-none">{remaining.days}</span><span className="text-[9px] text-gray-400 uppercase">{t.days}</span></div>
+                                                <span className="text-gray-300 dark:text-gray-600 mb-3">:</span>
+                                                <div className="text-center min-w-[30px]"><span className="text-lg font-bold block leading-none">{remaining.hours}</span><span className="text-[9px] text-gray-400 uppercase">{t.hours}</span></div>
+                                                <span className="text-gray-300 dark:text-gray-600 mb-3">:</span>
+                                                <div className="text-center min-w-[30px]"><span className="text-lg font-bold block leading-none">{remaining.minutes}</span><span className="text-[9px] text-gray-400 uppercase">{t.min}</span></div>
+                                                <span className="text-gray-300 dark:text-gray-600 mb-3">:</span>
+                                                <div className="text-center min-w-[30px]"><span className="text-lg font-bold block leading-none text-primary">{remaining.seconds}</span><span className="text-[9px] text-gray-400 uppercase">{t.sec}</span></div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-red-500 font-bold flex items-center gap-2 bg-red-50 dark:bg-red-900/20 w-fit px-3 py-1.5 rounded-lg text-sm border border-red-100 dark:border-red-900">
+                                                <AlertCircle size={16}/> {t.completed}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             );
@@ -1016,7 +1199,7 @@
         };
 
         // 3. النتائج
-        const ResultsPage = ({ onBack, t, lang, onShowNotifications }) => {
+        const ResultsPage = ({ onBack, t, lang, onOpenNotifications }) => {
             const isAr = lang === 'ar';
             
             // Labels
@@ -1104,7 +1287,12 @@
             const getScoreColor = (score, max) => { const pct = (score / max) * 100; if (pct >= 90) return 'bg-emerald-600 text-emerald-100'; if (pct >= 80) return 'bg-lime-400 text-lime-900'; if (pct >= 60) return 'bg-yellow-400 text-yellow-900'; return 'bg-red-500 text-white'; };
             const getScoreColorText = (score, max) => { const pct = (score / max) * 100; if (pct >= 90) return 'text-emerald-700'; if (pct >= 80) return 'text-lime-600'; if (pct >= 60) return 'text-yellow-600'; return 'text-red-600'; };
             const chartMax = 4.0;
-            const chartPoints = gpaTrend.map((item, index) => { const x = 10 + (index / (gpaTrend.length - 1)) * 80; const y = 60 - ((item.gpa / chartMax) * 50); return { x, y, ...item }; });
+            const chartPoints = gpaTrend.map((item, index) => { 
+                const xOffset = (index / (gpaTrend.length - 1)) * 80;
+                const x = isAr ? 90 - xOffset : 10 + xOffset; 
+                const y = 60 - ((item.gpa / chartMax) * 50); 
+                return { x, y, ...item }; 
+            });
             const pathData = "M" + chartPoints.map(p => `${p.x},${p.y}`).join(" L");
 
             return (
@@ -1115,7 +1303,7 @@
                         lang={lang} 
                         extra={
                             <div className="flex gap-2">
-                                <NotificationBell t={t} onClick={onShowNotifications} />
+                                <NotificationBell onClick={onOpenNotifications} />
                                 <button className="text-primary hover:bg-primary/10 p-2 rounded-lg transition"><Download size={20}/></button>
                             </div>
                         } 
@@ -1154,11 +1342,10 @@
                                         </div>
                                     </div>
                                     <div className="p-4 space-y-4 flex-1">
-                                        <div className="flex justify-between items-center text-[10px] text-gray-400 mb-2"><span>{labels.assessment}</span><div className="flex gap-3"><span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-primary"></div> {labels.yourGrade}</span><span className="flex items-center gap-1"><div className="w-0.5 h-3 bg-gray-400"></div> {labels.classAvg}</span></div></div>
                                         {course.components.map((comp, cIdx) => (
                                             <div key={cIdx} className="group">
                                                 <div className="flex justify-between items-end mb-1"><span className="text-xs font-bold text-gray-600 dark:text-gray-400">{comp.label}</span><div className="flex items-end gap-1"><span className={`text-sm font-bold font-mono ${course.isPending && comp.label === componentLabels.final ? 'text-gray-400' : getScoreColorText(comp.student, comp.max)}`}>{course.isPending && comp.label === componentLabels.final ? '--' : comp.student}</span><span className="text-[10px] text-gray-400">/ {comp.max}</span></div></div>
-                                                <div className="relative h-2.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-visible"><div className={`absolute top-0 ${isAr ? 'right-0' : 'left-0'} h-full rounded-full ${getScoreColor(comp.student, comp.max).split(' ')[0]}`} style={{ width: `${(comp.student / comp.max) * 100}%`, opacity: course.isPending && comp.label === componentLabels.final ? 0.3 : 1 }}></div><div className={`absolute top-[-2px] bottom-[-2px] w-0.5 bg-gray-800 dark:bg-white z-10 shadow-[0_0_2px_rgba(0,0,0,0.5)]`} style={{ [isAr ? 'right' : 'left']: `${(comp.avg / comp.max) * 100}%` }} title={`${labels.tooltipAvg} ${comp.avg}`}></div></div><div className={`text-[9px] text-gray-400 mt-0.5 dir-ltr font-mono ${isAr ? 'text-left' : 'text-right'}`}>Avg: {comp.avg}</div>
+                                                <div className="relative h-2.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-visible"><div className={`absolute top-0 ${isAr ? 'right-0' : 'left-0'} h-full rounded-full ${getScoreColor(comp.student, comp.max).split(' ')[0]}`} style={{ width: `${(comp.student / comp.max) * 100}%`, opacity: course.isPending && comp.label === componentLabels.final ? 0.3 : 1 }}></div><div className={`absolute top-[-2px] bottom-[-2px] w-0.5 bg-gray-800 dark:bg-white z-10 shadow-[0_0_2px_rgba(0,0,0,0.5)]`} style={{ [isAr ? 'right' : 'left']: `${(comp.avg / comp.max) * 100}%` }} title={`${labels.tooltipAvg} ${comp.avg}`}></div></div><div className={`text-[9px] text-gray-400 mt-0.5 ${isAr ? 'text-left' : 'text-right'}`}>{isAr ? 'المتوسط' : 'Avg'}: <span className="font-mono">{comp.avg}</span></div>
                                             </div>
                                         ))}
                                     </div>
@@ -1323,10 +1510,24 @@
                 hrs: isAr ? "ساعات" : "hrs",
                 noAbsences: isAr ? "لا توجد غيابات مسجلة لهذه المادة" : "No absences recorded for this course",
                 excused: isAr ? "بعذر" : "Excused",
-                unexcused: isAr ? "بدون عذر" : "Unexcused"
+                unexcused: isAr ? "بدون عذر" : "Unexcused",
+                submitExcuse: isAr ? "تقديم عذر" : "Submit Excuse",
+                editExcuse: isAr ? "عرض وتعديل العذر" : "View/Edit Excuse",
+                underReview: isAr ? "تحت الدراسة (تعديل)" : "Under Review (Edit)",
+                excuseAccepted: isAr ? "عذر مقبول" : "Excuse Accepted",
+                excuseRejected: isAr ? "عذر مرفوض" : "Excuse Rejected",
+                excuseDetails: isAr ? "تفاصيل العذر (نصي)" : "Excuse Details (Text)",
+                attachFile: isAr ? "إرفاق ملف أو صورة" : "Attach File or Image",
+                supportsFormat: isAr ? "يدعم PDF, JPG, PNG" : "Supports PDF, JPG, PNG",
+                cancel: isAr ? "إلغاء" : "Cancel",
+                submit: isAr ? "إرسال العذر" : "Submit Excuse",
+                saveChanges: isAr ? "حفظ التعديلات" : "Save Changes",
+                successMsg: isAr ? "تم إرسال العذر بنجاح وهو الآن تحت الدراسة" : "Excuse submitted successfully and is under review",
+                updateMsg: isAr ? "تم تحديث بيانات العذر بنجاح" : "Excuse details updated successfully",
+                errorMsg: isAr ? "يرجى كتابة العذر أو إرفاق ملف" : "Please write the excuse or attach a file"
             };
 
-            const courses = [
+            const initialCourses = [
                 { 
                     name: isAr ? 'برمجة متقدمة' : 'Advanced Programming', 
                     code: 'CS204', 
@@ -1344,8 +1545,8 @@
                     totalHours: 32, 
                     absentHours: 4, 
                     records: [
-                        { date: '2024-02-12', day: isAr ? 'الاثنين' : 'Monday', hours: 2, status: 'unexcused', note: isAr ? 'غائب' : 'Absent' }, 
-                        { date: '2024-03-04', day: isAr ? 'الاثنين' : 'Monday', hours: 2, status: 'unexcused', note: isAr ? 'غائب' : 'Absent' }
+                        { id: 1, date: '2024-02-12', day: isAr ? 'الاثنين' : 'Monday', hours: 2, status: 'unexcused', excuseStatus: 'none', note: isAr ? 'غائب' : 'Absent' }, 
+                        { id: 2, date: '2024-03-04', day: isAr ? 'الاثنين' : 'Monday', hours: 2, status: 'unexcused', excuseStatus: 'pending', note: isAr ? 'غائب' : 'Absent', submittedText: isAr ? 'عذر طبي من المستشفى الجامعي' : 'Medical excuse from university hospital' }
                     ] 
                 },
                 { 
@@ -1356,10 +1557,10 @@
                     totalHours: 40, 
                     absentHours: 8, 
                     records: [
-                        { date: '2024-01-28', day: isAr ? 'الأحد' : 'Sunday', hours: 2, status: 'excused', note: isAr ? 'تقرير طبي #442' : 'Medical Report #442' }, 
-                        { date: '2024-02-11', day: isAr ? 'الأحد' : 'Sunday', hours: 2, status: 'excused', note: isAr ? 'عذر مقبول' : 'Accepted Excuse' }, 
-                        { date: '2024-03-10', day: isAr ? 'الأحد' : 'Sunday', hours: 2, status: 'unexcused', note: isAr ? 'غائب' : 'Absent' }, 
-                        { date: '2024-03-24', day: isAr ? 'الأحد' : 'Sunday', hours: 2, status: 'excused', note: isAr ? 'ظرف عائلي' : 'Family Emergency' }
+                        { id: 3, date: '2024-01-28', day: isAr ? 'الأحد' : 'Sunday', hours: 2, status: 'excused', excuseStatus: 'accepted', note: isAr ? 'تقرير طبي #442' : 'Medical Report #442' }, 
+                        { id: 4, date: '2024-02-11', day: isAr ? 'الأحد' : 'Sunday', hours: 2, status: 'excused', excuseStatus: 'accepted', note: isAr ? 'عذر مقبول' : 'Accepted Excuse' }, 
+                        { id: 5, date: '2024-03-10', day: isAr ? 'الأحد' : 'Sunday', hours: 2, status: 'unexcused', excuseStatus: 'rejected', note: isAr ? 'غائب' : 'Absent' }, 
+                        { id: 6, date: '2024-03-24', day: isAr ? 'الأحد' : 'Sunday', hours: 2, status: 'excused', excuseStatus: 'accepted', note: isAr ? 'ظرف عائلي' : 'Family Emergency' }
                     ] 
                 },
                 { 
@@ -1370,18 +1571,103 @@
                     totalHours: 60, 
                     absentHours: 15, 
                     records: [
-                        { date: '2024-02-05', day: isAr ? 'الاثنين' : 'Monday', hours: 4, status: 'unexcused', note: isAr ? 'غائب' : 'Absent' }, 
-                        { date: '2024-03-11', day: isAr ? 'الاثنين' : 'Monday', hours: 2, status: 'unexcused', note: isAr ? 'غائب' : 'Absent' }, 
-                        { date: '2024-04-01', day: isAr ? 'الاثنين' : 'Monday', hours: 4, status: 'excused', note: isAr ? 'مراجعة مستشفى' : 'Hospital Appointment' }
+                        { id: 7, date: '2024-02-05', day: isAr ? 'الاثنين' : 'Monday', hours: 4, status: 'unexcused', excuseStatus: 'none', note: isAr ? 'غائب' : 'Absent' }, 
+                        { id: 8, date: '2024-03-11', day: isAr ? 'الاثنين' : 'Monday', hours: 2, status: 'unexcused', excuseStatus: 'none', note: isAr ? 'غائب' : 'Absent' }, 
+                        { id: 9, date: '2024-04-01', day: isAr ? 'الاثنين' : 'Monday', hours: 4, status: 'excused', excuseStatus: 'accepted', note: isAr ? 'مراجعة مستشفى' : 'Hospital Appointment' }
                     ] 
                 },
             ];
 
+            const [coursesData, setCoursesData] = useState(initialCourses);
+            const [selectedRecordForExcuse, setSelectedRecordForExcuse] = useState(null);
+            const [excuseText, setExcuseText] = useState('');
+            const [excuseFile, setExcuseFile] = useState(null);
+            const [toastMsg, setToastMsg] = useState(null);
+
+            const openExcuseModal = (course, record) => {
+                setSelectedRecordForExcuse({ courseCode: course.code, courseName: course.name, record: record });
+                setExcuseText(record.submittedText || '');
+                setExcuseFile(record.submittedFile ? { name: record.submittedFile } : null);
+            };
+
+            const handleExcuseSubmit = () => {
+                if (!excuseText.trim() && !excuseFile) {
+                    setToastMsg({ type: 'error', text: labels.errorMsg });
+                    setTimeout(() => setToastMsg(null), 3000);
+                    return;
+                }
+
+                const isEditing = selectedRecordForExcuse.record.excuseStatus === 'pending';
+
+                setCoursesData(prev => prev.map(course => {
+                    if (course.code === selectedRecordForExcuse.courseCode) {
+                        return {
+                            ...course,
+                            records: course.records.map(r => r.id === selectedRecordForExcuse.record.id ? { 
+                                ...r, 
+                                excuseStatus: 'pending',
+                                submittedText: excuseText,
+                                submittedFile: excuseFile ? excuseFile.name : null 
+                            } : r)
+                        };
+                    }
+                    return course;
+                }));
+
+                setToastMsg({ type: 'success', text: isEditing ? labels.updateMsg : labels.successMsg });
+                setSelectedRecordForExcuse(null);
+                setTimeout(() => setToastMsg(null), 3000);
+            };
+
             return (
                 <div className="animate-fade-in space-y-6">
+                    {toastMsg && <Toast message={toastMsg.text} type={toastMsg.type} onClose={() => setToastMsg(null)} />}
                     <HeaderPage title={labels.title} onBack={onBack} lang={lang} extra={<div className="bg-primary/10 text-primary px-3 py-1 rounded-lg text-sm font-bold border border-primary/20 flex items-center gap-2"><FileText size={16}/> {labels.regulations}</div>} />
+                    
+                    {/* Excuse Submission Modal */}
+                    {selectedRecordForExcuse && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setSelectedRecordForExcuse(null)}>
+                            <div className="bg-white dark:bg-dark-card w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700 transform transition-all scale-100 flex flex-col p-6" onClick={e => e.stopPropagation()}>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-xl font-bold text-gray-800 dark:text-white">
+                                        {selectedRecordForExcuse.record.excuseStatus === 'pending' ? labels.editExcuse : labels.submitExcuse}
+                                    </h3>
+                                    <button onClick={() => setSelectedRecordForExcuse(null)} className="text-gray-400 hover:text-gray-600"><X size={20}/></button>
+                                </div>
+                                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl mb-5 border border-gray-100 dark:border-gray-700">
+                                    <p className="text-sm font-bold text-gray-800 dark:text-white">{selectedRecordForExcuse.courseName}</p>
+                                    <p className="text-xs text-gray-500 font-mono mt-1">{selectedRecordForExcuse.record.day} - {selectedRecordForExcuse.record.date}</p>
+                                </div>
+
+                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{labels.excuseDetails}</label>
+                                <textarea
+                                    className="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none mb-4 text-gray-800 dark:text-white"
+                                    rows="3"
+                                    placeholder="..."
+                                    value={excuseText}
+                                    onChange={(e) => setExcuseText(e.target.value)}
+                                ></textarea>
+
+                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{labels.attachFile}</label>
+                                <label className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center hover:border-primary hover:bg-primary/5 transition cursor-pointer bg-gray-50 dark:bg-gray-800/50 mb-6 flex flex-col items-center justify-center w-full group">
+                                    <Upload className={`mb-2 transition-colors ${excuseFile ? 'text-primary' : 'text-gray-400 group-hover:text-primary'}`} size={28}/>
+                                    <span className={`text-sm font-bold mb-1 ${excuseFile ? 'text-primary' : 'text-gray-600 dark:text-gray-300'}`}>{excuseFile ? excuseFile.name : labels.attachFile}</span>
+                                    {!excuseFile && <span className="text-xs text-gray-400">{labels.supportsFormat}</span>}
+                                    <input type="file" className="hidden" onChange={(e) => setExcuseFile(e.target.files[0])} accept="image/*,.pdf" />
+                                </label>
+
+                                <div className="flex gap-3">
+                                    <button onClick={handleExcuseSubmit} className="flex-1 bg-primary text-white font-bold py-3 rounded-xl hover:bg-teal-700 transition shadow-lg shadow-primary/20">
+                                        {selectedRecordForExcuse.record.excuseStatus === 'pending' ? labels.saveChanges : labels.submit}
+                                    </button>
+                                    <button onClick={() => setSelectedRecordForExcuse(null)} className="flex-1 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 font-bold py-3 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition">{labels.cancel}</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-1 gap-6">
-                        {courses.map((course, idx) => {
+                        {coursesData.map((course, idx) => {
                             const progressPercent = Math.min((course.absencePct / 25) * 100, 100);
                             let statusColor = "bg-green-500";
                             let statusText = ""; 
@@ -1441,12 +1727,51 @@
                                         <div className="bg-gray-50 dark:bg-gray-800/30">
                                             <div className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700">{labels.daysRecord}</div>
                                             <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                                                {course.records.map((rec, rIdx) => {
+                                                {course.records.map((rec) => {
                                                     const percentage = ((rec.hours / course.totalHours) * 100).toFixed(1);
                                                     return (
-                                                        <div key={rIdx} className="px-6 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                                                            <div className="flex items-center gap-4"><div className={`p-2 rounded-lg ${rec.status === 'excused' ? 'bg-orange-100 text-orange-600' : 'bg-red-100 text-red-600'}`}><Calendar size={16}/></div><div><p className="text-sm font-bold text-gray-800 dark:text-gray-200">{rec.day} <span className="font-mono font-normal text-gray-500 text-xs dir-ltr">{rec.date}</span></p><div className="text-xs text-gray-500 flex items-center gap-1 mt-1"><span className="font-bold">{rec.hours} {labels.hrs}</span><span className="text-red-500 font-mono text-[10px] bg-red-50 dark:bg-red-900/30 px-1.5 rounded border border-red-100 dark:border-red-900">({percentage}%)</span><span className="text-gray-300 mx-1">•</span><span>{rec.note}</span></div></div></div>
-                                                            <span className={`text-[10px] font-bold px-2 py-1 rounded ${rec.status === 'excused' ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'}`}>{rec.status === 'excused' ? labels.excused : labels.unexcused}</span>
+                                                        <div key={rec.id} className="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-white dark:hover:bg-gray-800 transition">
+                                                            <div className="flex items-center gap-4">
+                                                                <div className={`p-2 rounded-lg ${rec.status === 'excused' ? 'bg-orange-100 text-orange-600' : 'bg-red-100 text-red-600'}`}>
+                                                                    <Calendar size={16}/>
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{rec.day} <span className="font-mono font-normal text-gray-500 text-xs dir-ltr">{rec.date}</span></p>
+                                                                    <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                                                                        <span className="font-bold">{rec.hours} {labels.hrs}</span>
+                                                                        <span className="text-red-500 font-mono text-[10px] bg-red-50 dark:bg-red-900/30 px-1.5 rounded border border-red-100 dark:border-red-900">({percentage}%)</span>
+                                                                        <span className="text-gray-300 mx-1">•</span>
+                                                                        <span>{rec.note}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center md:flex-col justify-between md:justify-center md:items-end gap-2 pl-12 md:pl-0">
+                                                                <span className={`text-[10px] font-bold px-2 py-1 rounded ${rec.status === 'excused' ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'}`}>
+                                                                    {rec.status === 'excused' ? labels.excused : labels.unexcused}
+                                                                </span>
+                                                                
+                                                                {/* New Excuse Status Visuals */}
+                                                                {rec.excuseStatus === 'none' && (
+                                                                    <button onClick={() => openExcuseModal(course, rec)} className="text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 active:scale-95">
+                                                                        <Upload size={14}/> {labels.submitExcuse}
+                                                                    </button>
+                                                                )}
+                                                                {rec.excuseStatus === 'pending' && (
+                                                                    <button onClick={() => openExcuseModal(course, rec)} className="text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 active:scale-95" title={labels.editExcuse}>
+                                                                        <FileText size={14}/> {labels.underReview}
+                                                                    </button>
+                                                                )}
+                                                                {rec.excuseStatus === 'accepted' && (
+                                                                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded flex items-center gap-1">
+                                                                        <CheckCircle2 size={12}/> {labels.excuseAccepted}
+                                                                    </span>
+                                                                )}
+                                                                {rec.excuseStatus === 'rejected' && (
+                                                                    <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-100 px-2 py-1 rounded flex items-center gap-1">
+                                                                        <X size={12}/> {labels.excuseRejected}
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     );
                                                 })}
@@ -1462,7 +1787,7 @@
         };
 
         // 6. السجل الأكاديمي
-        const AcademicRecordPage = ({ onBack, lang, t, onShowNotifications }) => {
+        const AcademicRecordPage = ({ onBack, lang, t, onOpenNotifications }) => {
             const isAr = lang === 'ar';
             
             // Labels
@@ -1524,7 +1849,7 @@
                         lang={lang} 
                         extra={
                             <div className="flex gap-2">
-                                <NotificationBell t={t} onClick={onShowNotifications} />
+                                <NotificationBell onClick={onOpenNotifications} />
                                 <button className="hidden md:flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-teal-700 transition"><Printer size={16}/> {isAr ? "طباعة" : "Print"}</button>
                             </div>
                         } 
@@ -1651,10 +1976,20 @@
                 { code: 'ISL101', hours: 2, sections: [ { id: 's4', section: '401', profAr: 'د. عبدالرحمن', profEn: 'Dr. Abdulrahman', time: '08:00 - 08:50', daysAr: 'عن بعد', daysEn: 'Online', status: 'open' }, { id: 's5', section: '402', profAr: 'د. عبدالله', profEn: 'Dr. Abdullah', time: '09:00 - 09:50', daysAr: 'عن بعد', daysEn: 'Online', status: 'open' } ] }, 
                 { code: 'CS204', hours: 3, sections: [ { id: 's6', section: '201', profAr: 'د. علي القحطاني', profEn: 'Dr. Ali', time: '10:00 - 10:50', daysAr: 'الأحد - الثلاثاء - الخميس', daysEn: 'Sun - Tue - Thu', status: 'open' } ] } 
             ]);
-            const [enrolled, setEnrolled] = useState([ 
-                { id: 1, code: 'CS101', hours: 3, section: '201', profAr: 'د. خالد', profEn: 'Dr. Khaled', time: '08:00 - 08:50' }, 
-                { id: 2, code: 'MATH101', hours: 4, section: '105', profAr: 'د. مصطفى', profEn: 'Dr. Mustafa', time: '09:00 - 09:50' } 
-            ]);
+            const [enrolled, setEnrolled] = useState([]);
+
+            useEffect(() => {
+                const enrolledRef = ref(db, 'user_enrolled_courses');
+                onValue(enrolledRef, (snapshot) => {
+                    const data = snapshot.val();
+                    if(data) {
+                        const list = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+                        setEnrolled(list);
+                    } else {
+                        setEnrolled([]); 
+                    }
+                });
+            }, []);
             
             const [filterTime, setFilterTime] = useState('');
             const [selectedCourseForAdd, setSelectedCourseForAdd] = useState(null);
@@ -1693,12 +2028,21 @@
                 const action = confirmationModal.type; 
                 const item = confirmationModal.item; 
                 if (action === 'drop') { 
-                    setEnrolled(enrolled.filter(c => c.id !== item.id)); 
-                    setMessage({ text: t.successDrop, type: 'success' }); 
+                    remove(ref(db, `user_enrolled_courses/${item.id}`)).then(() => {
+                        setMessage({ text: t.successDrop, type: 'success' }); 
+                    });
                 } else if (action === 'add') { 
-                    setEnrolled([...enrolled, item]); 
-                    setSelectedCourseForAdd(null); 
-                    setMessage({ text: t.successAdd, type: 'success' }); 
+                    push(ref(db, 'user_enrolled_courses'), {
+                        code: item.code,
+                        hours: item.hours,
+                        section: item.section,
+                        profAr: item.profAr || item.prof,
+                        profEn: item.profEn || item.prof,
+                        time: item.time
+                    }).then(() => {
+                        setSelectedCourseForAdd(null); 
+                        setMessage({ text: t.successAdd, type: 'success' }); 
+                    });
                 } 
                 setConfirmationModal(null); 
                 setTimeout(() => setMessage(null), 3000); 
@@ -1954,6 +2298,16 @@
             const [submitted, setSubmitted] = useState(false);
             const [selectedCourse, setSelectedCourse] = useState('');
 
+            const handleSubmit = () => {
+                const reqRef = ref(db, 'registration_requests');
+                push(reqRef, {
+                    typeKey: type,
+                    course: selectedCourse,
+                    date: new Date().toISOString().split('T')[0],
+                    status: 'pending'
+                }).then(() => setSubmitted(true));
+            };
+
             if(submitted) {
                 return (
                     <div className="animate-fade-in text-center py-20">
@@ -1968,6 +2322,14 @@
             return (
                 <div className="animate-fade-in space-y-6">
                     <HeaderPage title={titles[type]} onBack={onBack} lang={lang} />
+                    
+                    <CountdownTimer 
+                        title={isAr ? "يغلق التقديم على طلبات القسم خلال" : "Department requests close in"} 
+                        description={isAr ? "بادر بتقديم طلبك قبل إغلاق النظام" : "Submit your request before the system closes"}
+                        initialDays={2} 
+                        lang={lang} 
+                    />
+
                     <div className="bg-white dark:bg-dark-card p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
                         <div className="space-y-4">
                             <div>
@@ -2000,7 +2362,7 @@
                             </div>
 
                             <button 
-                                onClick={() => setSubmitted(true)} 
+                                onClick={handleSubmit} 
                                 disabled={!selectedCourse}
                                 className={`w-full font-bold py-3 rounded-xl transition shadow-lg ${!selectedCourse ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' : 'bg-primary text-white hover:bg-teal-700 shadow-primary/20'}`}
                             >
@@ -2008,6 +2370,192 @@
                             </button>
                         </div>
                     </div>
+                </div>
+            );
+        };
+
+        // --- NEW: طلب مزدوج / استبدال (Multi-Request Page) ---
+        const MultiRequestPage = ({ onBack, lang }) => {
+            const isAr = lang === 'ar';
+            
+            const t = {
+                title: isAr ? 'طلب مزدوج / استبدال' : 'Multi-Request / Swap',
+                desc: isAr ? 'يمكنك رفع أكثر من إجراء في نفس الطلب (مثال: حذف مقرر وإضافة مقرر آخر بدلاً منه) ليتم دراستها معاً كحالة واحدة.' : 'You can submit multiple actions in one request (e.g., drop a course and add another) to be processed together.',
+                actionType: isAr ? 'نوع الإجراء' : 'Action Type',
+                selectCourse: isAr ? 'المقرر' : 'Course',
+                sectionNum: isAr ? 'رقم الشعبة' : 'Section Number',
+                addMore: isAr ? 'إضافة إجراء آخر للطلب' : 'Add another action',
+                justification: isAr ? 'مبررات الطلب المزدوج (هام)' : 'Justification for combined request (Important)',
+                submit: isAr ? 'إرسال الطلب المزدوج' : 'Submit Combined Request',
+                successTitle: isAr ? 'تم إرسال الطلب بنجاح' : 'Request Submitted Successfully',
+                reqId: isAr ? 'رقم الطلب:' : 'Request ID:',
+                backMenu: isAr ? 'عودة للقائمة' : 'Back to Menu',
+                types: {
+                    add: isAr ? 'إضافة مقرر' : 'Add Course',
+                    drop: isAr ? 'حذف مقرر' : 'Drop Course',
+                    change: isAr ? 'تغيير شعبة' : 'Change Section'
+                }
+            };
+
+            const myCourses = [
+                { code: 'CS204', nameAr: 'برمجة 2 - CS204', nameEn: 'Programming 2 - CS204' },
+                { code: 'CS205', nameAr: 'قواعد بيانات - CS205', nameEn: 'Databases - CS205' },
+                { code: 'ISL102', nameAr: 'ثقافة إسلامية 2 - ISL102', nameEn: 'Islamic Culture 2 - ISL102' }
+            ];
+
+            const offeredCourses = [
+                { code: 'SE301', nameAr: 'هندسة برمجيات - SE301', nameEn: 'Software Engineering - SE301' },
+                { code: 'CS305', nameAr: 'نظم تشغيل - CS305', nameEn: 'Operating Systems - CS305' },
+                { code: 'MATH201', nameAr: 'إحصاء هندسي - MATH201', nameEn: 'Engineering Statistics - MATH201' }
+            ];
+
+            // State for multiple actions
+            const [actions, setActions] = useState([{ id: Date.now(), type: '', course: '', section: '' }]);
+            const [justification, setJustification] = useState('');
+            const [submitted, setSubmitted] = useState(false);
+
+            const handleSubmit = () => {
+                const reqRef = ref(db, 'registration_requests');
+                push(reqRef, {
+                    typeKey: 'multi',
+                    course: isAr ? 'طلب مزدوج' : 'Multi Request',
+                    actions: actions,
+                    justification: justification,
+                    date: new Date().toISOString().split('T')[0],
+                    status: 'pending'
+                }).then(() => setSubmitted(true));
+            };
+
+            const handleAddAction = () => {
+                if (actions.length < 4) { // Max 4 actions
+                    setActions([...actions, { id: Date.now(), type: '', course: '', section: '' }]);
+                }
+            };
+
+            const handleRemoveAction = (id) => {
+                setActions(actions.filter(a => a.id !== id));
+            };
+
+            const updateAction = (id, field, value) => {
+                setActions(actions.map(a => a.id === id ? { ...a, [field]: value } : a));
+            };
+
+            const isFormValid = actions.every(a => a.type && a.course && (a.type === 'drop' || a.section)) && justification.trim().length > 0;
+
+            if(submitted) {
+                return (
+                    <div className="animate-fade-in text-center py-20">
+                        <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6"><Check size={40}/></div>
+                        <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">{t.successTitle}</h3>
+                        <p className="text-gray-500 mb-6">{t.reqId} #REQ-{Math.floor(Math.random()*10000)}</p>
+                        <button onClick={onBack} className="bg-gray-100 text-gray-700 px-6 py-2 rounded-lg font-bold hover:bg-gray-200">{t.backMenu}</button>
+                    </div>
+                )
+            }
+
+            return (
+                <div className="animate-fade-in space-y-6">
+                    <HeaderPage title={t.title} onBack={onBack} lang={lang} />
+                    
+                    <CountdownTimer 
+                        title={isAr ? "يغلق التقديم على الطلبات المزدوجة خلال" : "Multi-Request portal closes in"} 
+                        description={isAr ? "بادر بتقديم طلبك قبل إغلاق النظام" : "Submit your request before the system closes"}
+                        initialDays={2} 
+                        lang={lang} 
+                    />
+                    
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 p-4 rounded-xl flex gap-3 text-blue-800 dark:text-blue-200 text-sm">
+                        <AlertCircle size={20} className="shrink-0"/>
+                        <p>{t.desc}</p>
+                    </div>
+
+                    <div className="space-y-4">
+                        {actions.map((action, index) => {
+                            const courseList = action.type === 'add' ? offeredCourses : myCourses;
+                            
+                            return (
+                                <div key={action.id} className="bg-white dark:bg-dark-card p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm relative group transition-all hover:border-primary">
+                                    <div className="flex justify-between items-center mb-4 border-b border-gray-100 dark:border-gray-700 pb-2">
+                                        <h4 className="font-bold text-gray-600 dark:text-gray-300 text-sm">{isAr ? `إجراء رقم ${index + 1}` : `Action #${index + 1}`}</h4>
+                                        {actions.length > 1 && (
+                                            <button onClick={() => handleRemoveAction(action.id)} className="text-red-400 hover:text-red-600 p-1 bg-red-50 hover:bg-red-100 rounded-md transition">
+                                                <Trash2 size={16}/>
+                                            </button>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 mb-1">{t.actionType}</label>
+                                            <select 
+                                                className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none text-sm text-gray-700 dark:text-gray-200"
+                                                value={action.type}
+                                                onChange={(e) => updateAction(action.id, 'type', e.target.value)}
+                                            >
+                                                <option value="" disabled>-- {t.actionType} --</option>
+                                                <option value="drop">{t.types.drop}</option>
+                                                <option value="add">{t.types.add}</option>
+                                                <option value="change">{t.types.change}</option>
+                                            </select>
+                                        </div>
+
+                                        <div className={action.type === 'drop' ? 'md:col-span-2' : 'md:col-span-1'}>
+                                            <label className="block text-xs font-bold text-gray-500 mb-1">{t.selectCourse}</label>
+                                            <select 
+                                                className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none text-sm text-gray-700 dark:text-gray-200 disabled:opacity-50"
+                                                value={action.course}
+                                                onChange={(e) => updateAction(action.id, 'course', e.target.value)}
+                                                disabled={!action.type}
+                                            >
+                                                <option value="" disabled>-- {t.selectCourse} --</option>
+                                                {courseList.map((c, i) => (
+                                                    <option key={i} value={c.code}>{isAr ? c.nameAr : c.nameEn}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {action.type !== 'drop' && (
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 mb-1">{t.sectionNum}</label>
+                                                <input 
+                                                    type="number" 
+                                                    className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none text-sm disabled:opacity-50" 
+                                                    value={action.section}
+                                                    onChange={(e) => updateAction(action.id, 'section', e.target.value)}
+                                                    disabled={!action.type}
+                                                    placeholder="..." 
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {actions.length < 4 && (
+                        <button onClick={handleAddAction} className="w-full py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-500 font-bold hover:border-primary hover:text-primary transition flex items-center justify-center gap-2">
+                            <PlusCircle size={18}/> {t.addMore}
+                        </button>
+                    )}
+
+                    <div className="bg-white dark:bg-dark-card p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t.justification}</label>
+                        <textarea 
+                            className="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none h-24" 
+                            placeholder="..."
+                            value={justification}
+                            onChange={(e) => setJustification(e.target.value)}
+                        ></textarea>
+                    </div>
+
+                    <button 
+                        onClick={handleSubmit} 
+                        disabled={!isFormValid}
+                        className={`w-full font-bold py-3.5 rounded-xl transition shadow-lg ${!isFormValid ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' : 'bg-primary text-white hover:bg-teal-700 shadow-primary/20'}`}
+                    >
+                        {t.submit}
+                    </button>
                 </div>
             );
         };
@@ -2026,25 +2574,44 @@
                 types: {
                     add: isAr ? 'إضافة مقرر' : 'Add Course',
                     change: isAr ? 'تغيير شعبة' : 'Change Section',
-                    drop: isAr ? 'حذف مقرر' : 'Drop Course'
+                    drop: isAr ? 'حذف مقرر' : 'Drop Course',
+                    withdraw: isAr ? 'انسحاب من مقرر' : 'Withdraw',
+                    multi: isAr ? 'طلب مزدوج' : 'Multi Request'
                 }
             };
 
-            const requests = [
-                { id: 501, typeKey: 'add', date: '2024-05-10', status: 'pending', course: 'CS302' },
-                { id: 402, typeKey: 'change', date: '2024-05-08', status: 'approved', course: 'MATH201' },
-                { id: 305, typeKey: 'drop', date: '2024-05-01', status: 'rejected', course: 'ISL101' },
+            const defaultMockRequests = [
+                { id: 'REG-8492', typeKey: 'add', course: 'SE301', date: '2026-05-24', status: 'approved' },
+                { id: 'REG-2910', typeKey: 'drop', course: 'CS204', date: '2026-05-25', status: 'rejected' }
             ];
+
+            const [requests, setRequests] = useState(defaultMockRequests);
+            useEffect(() => {
+                const reqRef = ref(db, 'registration_requests');
+                onValue(reqRef, (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        const reqList = Object.keys(data).map(key => ({
+                            id: key.slice(-4).toUpperCase(),
+                            ...data[key]
+                        }));
+                        setRequests([...reqList.reverse(), ...defaultMockRequests]);
+                    } else {
+                        setRequests(defaultMockRequests);
+                    }
+                });
+            }, []);
 
             return (
                 <div className="animate-fade-in space-y-6">
                     <HeaderPage title={t.title} onBack={onBack} lang={lang} />
                     <div className="space-y-3">
+                        {requests.length === 0 && <p className="text-center text-gray-500 py-10">لا توجد طلبات مسجلة</p>}
                         {requests.map(req => (
                             <div key={req.id} className="bg-white dark:bg-dark-card p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex justify-between items-center shadow-sm">
                                 <div>
                                     <div className="font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                                        {t.types[req.typeKey]}
+                                        {t.types[req.typeKey] || req.typeKey}
                                         <span className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded font-mono text-gray-500">{req.course}</span>
                                     </div>
                                     <div className="text-xs text-gray-400 mt-1">{t.reqDate} {req.date}</div>
@@ -2088,6 +2655,16 @@
                 backButton: isAr ? "عودة" : "Back"
             };
 
+            const handleSubmit = () => {
+                const actionRef = ref(db, 'academic_actions');
+                push(actionRef, {
+                    type: t.options[actionType],
+                    term: isAr ? 'الفصل الحالي' : 'Current Semester',
+                    date: new Date().toISOString().split('T')[0],
+                    status: 'pending'
+                }).then(() => setSubmitted(true));
+            };
+
             if(submitted) {
                 return (
                     <div className="animate-fade-in text-center py-20">
@@ -2102,6 +2679,14 @@
             return (
                 <div className="animate-fade-in space-y-6">
                     <HeaderPage title={t.title} onBack={onBack} lang={lang} />
+                    
+                    <CountdownTimer 
+                        title={isAr ? "يغلق التقديم على الحركات الأكاديمية خلال" : "Academic Actions portal closes in"} 
+                        description={isAr ? "سيتم إيقاف استقبال الطلبات بعد انتهاء الوقت المسموح" : "Request submissions will halt after time is up"}
+                        initialDays={5} 
+                        lang={lang} 
+                    />
+
                     <div className="bg-white dark:bg-dark-card p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
                         <div className="space-y-5">
                             <div>
@@ -2143,7 +2728,7 @@
                             </div>
 
                             <button 
-                                onClick={() => setSubmitted(true)} 
+                                onClick={handleSubmit} 
                                 disabled={!actionType}
                                 className={`w-full font-bold py-3 rounded-xl transition shadow-lg ${!actionType ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' : 'bg-primary text-white hover:bg-teal-700 shadow-primary/20'}`}
                             >
@@ -2171,10 +2756,27 @@
                 }
             };
 
-            const actions = [
-                { id: 2055, type: isAr ? 'اعتذار عن فصل' : 'Semester Apology', term: isAr ? 'الفصل الثاني 1444' : '2nd Semester 1444', status: 'approved', date: '2023-01-15' },
-                { id: 1089, type: isAr ? 'تأجيل دراسة' : 'Study Postponement', term: isAr ? 'الفصل الأول 1444' : '1st Semester 1444', status: 'rejected', date: '2022-09-01', note: isAr ? 'تجاوز الحد المسموح للتأجيل' : 'Exceeded postponement limit' },
+            const defaultMockActions = [
+                { id: 'ACT-8291', type: isAr ? 'اعتذار عن فصل دراسي' : 'Semester Apology', term: isAr ? 'الفصل الدراسي الثاني' : 'Second Semester', date: '2026-05-20', status: 'approved' },
+                { id: 'ACT-4921', type: isAr ? 'تأجيل الدراسة' : 'Study Postponement', term: isAr ? 'الفصل الدراسي الثاني' : 'Second Semester', date: '2026-05-21', status: 'rejected' }
             ];
+
+            const [actions, setActions] = useState(defaultMockActions);
+            useEffect(() => {
+                const actionRef = ref(db, 'academic_actions');
+                onValue(actionRef, (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        const actionList = Object.keys(data).map(key => ({
+                            id: key.slice(-4).toUpperCase(),
+                            ...data[key]
+                        }));
+                        setActions([...actionList.reverse(), ...defaultMockActions]);
+                    } else {
+                        setActions(defaultMockActions);
+                    }
+                });
+            }, []);
 
             const getStatusBadge = (status) => {
                 const label = t.status[status];
@@ -2243,6 +2845,19 @@
                     isAr ? "هندسة حاسب آلي" : "Computer Engineering"
                 ]
             };
+
+            const [targetCollege, setTargetCollege] = useState(t.colleges[0]);
+            const [targetMajor, setTargetMajor] = useState(t.majors[0]);
+
+            const handleSubmit = () => {
+                const reqRef = ref(db, 'major_change_requests');
+                push(reqRef, {
+                    targetCollege: targetCollege,
+                    target: targetMajor,
+                    date: new Date().toISOString().split('T')[0],
+                    status: 'pending'
+                }).then(() => setSubmitted(true));
+            };
             
             if(submitted) {
                 return (
@@ -2259,6 +2874,13 @@
                 <div className="animate-fade-in space-y-6">
                     <HeaderPage title={t.title} onBack={onBack} lang={lang} />
                     
+                    <CountdownTimer 
+                        title={isAr ? "تغلق بوابة التحويل وتغيير التخصص خلال" : "Major Change portal closes in"} 
+                        description={isAr ? "تأكد من استيفاء الشروط قبل تقديم الطلب" : "Ensure you meet the requirements before submitting"}
+                        initialDays={1} 
+                        lang={lang} 
+                    />
+
                     {/* معلومات الطالب الحالية */}
                     <div className="bg-primary/5 border border-primary/10 p-4 rounded-xl flex justify-between items-center">
                         <div>
@@ -2277,7 +2899,11 @@
                         <div>
                             <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t.targetCollege}</label>
                             <div className="relative">
-                                <select className="w-full p-3 pr-10 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none appearance-none text-gray-700 dark:text-gray-200">
+                                <select 
+                                    value={targetCollege} 
+                                    onChange={(e) => setTargetCollege(e.target.value)}
+                                    className="w-full p-3 pr-10 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none appearance-none text-gray-700 dark:text-gray-200"
+                                >
                                     {t.colleges.map((c, i) => <option key={i}>{c}</option>)}
                                 </select>
                                 <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18}/>
@@ -2287,7 +2913,11 @@
                         <div>
                             <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t.targetMajor}</label>
                             <div className="relative">
-                                <select className="w-full p-3 pr-10 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none appearance-none text-gray-700 dark:text-gray-200">
+                                <select 
+                                    value={targetMajor} 
+                                    onChange={(e) => setTargetMajor(e.target.value)}
+                                    className="w-full p-3 pr-10 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none appearance-none text-gray-700 dark:text-gray-200"
+                                >
                                     {t.majors.map((m, i) => <option key={i}>{m}</option>)}
                                 </select>
                                 <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18}/>
@@ -2298,7 +2928,7 @@
                             {t.note}
                         </div>
 
-                        <button onClick={() => setSubmitted(true)} className="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-teal-700 transition shadow-lg shadow-primary/20">
+                        <button onClick={handleSubmit} className="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-teal-700 transition shadow-lg shadow-primary/20">
                             {t.submit}
                         </button>
                     </div>
@@ -2322,10 +2952,27 @@
                 }
             };
 
-            const requests = [
-                { id: 9901, target: isAr ? 'علوم الحاسب الآلي' : 'Computer Science', date: '2023-05-10', status: 'pending', note: isAr ? 'بانتظار موافقة عميد الكلية' : 'Awaiting Dean approval' },
-                { id: 8820, target: isAr ? 'أمن سيبراني' : 'Cybersecurity', date: '2022-12-01', status: 'rejected', note: isAr ? 'المعدل لا يستوفي الشروط' : 'GPA does not meet requirements' }
+            const defaultMockRequests = [
+                { id: 'CHG-9841', target: isAr ? 'علوم الحاسب الآلي' : 'Computer Science', date: '2026-05-20', status: 'approved' },
+                { id: 'CHG-5102', target: isAr ? 'نظم المعلومات' : 'Information Systems', date: '2026-05-21', status: 'rejected' }
             ];
+
+            const [requests, setRequests] = useState(defaultMockRequests);
+            useEffect(() => {
+                const reqRef = ref(db, 'major_change_requests');
+                onValue(reqRef, (snapshot) => {
+                    const data = snapshot.val();
+                    if(data) {
+                        const list = Object.keys(data).map(key => ({
+                            id: key.slice(-4).toUpperCase(),
+                            ...data[key]
+                        }));
+                        setRequests([...list.reverse(), ...defaultMockRequests]);
+                    } else {
+                        setRequests(defaultMockRequests);
+                    }
+                });
+            }, []);
 
             const getStatusBadge = (status) => {
                 const label = t.status[status];
@@ -2338,6 +2985,7 @@
                 <div className="animate-fade-in space-y-6">
                     <HeaderPage title={t.title} onBack={onBack} lang={lang} />
                     <div className="space-y-4">
+                        {requests.length === 0 && <p className="text-center text-gray-500 py-10">لا توجد طلبات سابقة</p>}
                         {requests.map(req => (
                             <div key={req.id} className="bg-white dark:bg-dark-card p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                                 <div className="flex justify-between items-start mb-2">
@@ -2361,32 +3009,560 @@
             );
         };
 
+        // --- NEW: حجز ساعات مكتبية ---
+        const OfficeHoursBookPage = ({ onBack, lang }) => {
+            const isAr = lang === 'ar';
+            const [submitted, setSubmitted] = useState(false);
+            const [selectedProf, setSelectedProf] = useState('');
+            const [selectedSlot, setSelectedSlot] = useState(null);
+
+            const t = {
+                title: isAr ? "حجز ساعات مكتبية" : "Book Office Hours",
+                selectProf: isAr ? "اختر المسؤول أو عضو هيئة التدريس" : "Select Official or Instructor",
+                defaultProf: isAr ? "-- اختر من القائمة --" : "-- Select from list --",
+                selectSlot: isAr ? "المواعيد المتاحة" : "Available Slots",
+                noSlots: isAr ? "يرجى اختيار مسؤول أو دكتور لعرض المواعيد" : "Please select an official/instructor to view slots",
+                reason: isAr ? "موضوع النقاش (اختياري)" : "Discussion Topic (Optional)",
+                submit: isAr ? "تأكيد الحجز" : "Confirm Booking",
+                successTitle: isAr ? "تم إرسال طلب الحجز" : "Booking Request Sent",
+                successDesc: isAr ? "بانتظار التأكيد. يمكنك متابعة حالة الطلب من صفحة مواعيدي." : "Pending confirmation. Track status in My Appointments.",
+                back: isAr ? "عودة للقائمة" : "Back to Menu",
+                inPerson: isAr ? "حضوري" : "In-Person",
+                online: isAr ? "عن بعد" : "Online"
+            };
+
+            const profs = [
+                { id: 'p1', name: isAr ? 'د. أحمد سالم' : 'Dr. Ahmed Salem', role: isAr ? 'أستاذ مقرر الإحصاء الهندسي' : 'Instructor - MATH101' },
+                { id: 'p2', name: isAr ? 'د. خالد الشهري' : 'Dr. Khalid Al-Shehri', role: isAr ? 'أستاذ مقرر أمن سيبراني' : 'Instructor - CS320' },
+                { id: 'p3', name: isAr ? 'أ. محمد علي' : 'Mr. Mohamed Ali', role: isAr ? 'أستاذ مقرر تحليل كيميائي' : 'Instructor - CH202' },
+                { id: 'p4', name: isAr ? 'د. عبدالله الغامدي' : 'Dr. Abdullah Al-Ghamdi', role: isAr ? 'رئيس قسم هندسة البرمجيات' : 'Head of Software Eng. Dept.' },
+                { id: 'p5', name: isAr ? 'أ.د. فهد الزهراني' : 'Prof. Fahad Al-Zahrani', role: isAr ? 'عميد كلية الحاسب الآلي' : 'Dean of Computer College' }
+            ];
+
+            const allSlots = {
+                'p1': [
+                    { id: 's1', day: isAr ? 'الاثنين' : 'Monday', date: '2024-05-20', time: '10:00 - 11:00', mode: 'inPerson', room: 'مكتب 101' },
+                    { id: 's2', day: isAr ? 'الأربعاء' : 'Wednesday', date: '2024-05-22', time: '13:00 - 14:00', mode: 'online', room: 'Teams' }
+                ],
+                'p2': [
+                    { id: 's3', day: isAr ? 'الثلاثاء' : 'Tuesday', date: '2024-05-21', time: '09:00 - 10:00', mode: 'online', room: 'Webex' }
+                ],
+                'p3': [
+                    { id: 's4', day: isAr ? 'الخميس' : 'Thursday', date: '2024-05-23', time: '11:00 - 12:30', mode: 'inPerson', room: 'معمل 3' }
+                ],
+                'p4': [
+                    { id: 's5', day: isAr ? 'الأحد' : 'Sunday', date: '2024-05-19', time: '10:00 - 12:00', mode: 'inPerson', room: 'مكتب رئيس القسم' }
+                ],
+                'p5': [
+                    { id: 's6', day: isAr ? 'الاثنين' : 'Monday', date: '2024-05-20', time: '13:00 - 14:00', mode: 'online', room: 'Zoom' }
+                ]
+            };
+            
+            const handleSubmit = () => {
+                const reqRef = ref(db, 'office_hours');
+                const prof = profs.find(p=>p.id === selectedProf);
+                const slot = allSlots[selectedProf].find(s => s.id === selectedSlot);
+                push(reqRef, {
+                    prof: prof ? prof.name : '',
+                    course: prof ? prof.role : '',
+                    date: slot.date,
+                    time: slot.time,
+                    mode: slot.mode,
+                    room: slot.room || '',
+                    link: slot.mode === 'online' ? '#' : '',
+                    status: 'pending'
+                }).then(() => setSubmitted(true));
+            };
+
+            if(submitted) {
+                return (
+                    <div className="animate-fade-in text-center py-20">
+                        <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6"><CheckCircle2 size={40}/></div>
+                        <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">{t.successTitle}</h3>
+                        <p className="text-gray-500 mb-6">{t.successDesc}</p>
+                        <button onClick={onBack} className="bg-gray-100 text-gray-700 px-6 py-2 rounded-lg font-bold hover:bg-gray-200 transition">{t.back}</button>
+                    </div>
+                )
+            }
+
+            return (
+                <div className="animate-fade-in space-y-6">
+                    <HeaderPage title={t.title} onBack={onBack} lang={lang} />
+                    <div className="bg-white dark:bg-dark-card p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm space-y-6">
+                        
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t.selectProf}</label>
+                            <div className="relative">
+                                <select 
+                                    className="w-full p-3 pr-10 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none appearance-none text-gray-700 dark:text-gray-200"
+                                    value={selectedProf}
+                                    onChange={(e) => { setSelectedProf(e.target.value); setSelectedSlot(null); }}
+                                >
+                                    <option value="" disabled>{t.defaultProf}</option>
+                                    {profs.map(p => (
+                                        <option key={p.id} value={p.id}>{p.name} ({p.role})</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18}/>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t.selectSlot}</label>
+                            {!selectedProf ? (
+                                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg text-center text-gray-500 text-sm border border-dashed border-gray-200 dark:border-gray-700">{t.noSlots}</div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {allSlots[selectedProf].map(slot => (
+                                        <button 
+                                            key={slot.id} 
+                                            onClick={() => setSelectedSlot(slot.id)}
+                                            className={`p-4 rounded-xl border text-right flex items-start gap-3 transition-all text-right ${selectedSlot === slot.id ? 'bg-primary/5 border-primary ring-1 ring-primary' : 'bg-white dark:bg-dark-card border-gray-200 dark:border-gray-700 hover:border-primary/50'}`}
+                                        >
+                                            <div className={`p-2 rounded-lg shrink-0 mt-0.5 ${slot.mode === 'inPerson' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}`}>
+                                                {slot.mode === 'inPerson' ? <MapPin size={20}/> : <Video size={20}/>}
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="font-bold text-gray-800 dark:text-white text-sm">{slot.day} - {slot.date}</h4>
+                                                <p className="text-gray-500 text-xs mt-1 flex items-center gap-1 dir-ltr w-fit"><Clock size={12}/> {slot.time}</p>
+                                                <div className="mt-2 flex items-center gap-2">
+                                                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${slot.mode === 'inPerson' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>{slot.mode === 'inPerson' ? t.inPerson : t.online}</span>
+                                                    <span className="text-[10px] text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">{slot.room}</span>
+                                                </div>
+                                            </div>
+                                            {selectedSlot === slot.id && <CheckCircle2 size={20} className="text-primary shrink-0"/>}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t.reason}</label>
+                            <textarea className="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none h-24" placeholder="..."></textarea>
+                        </div>
+
+                        <button 
+                            onClick={handleSubmit} 
+                            disabled={!selectedSlot}
+                            className={`w-full font-bold py-3 rounded-xl transition shadow-lg ${!selectedSlot ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' : 'bg-primary text-white hover:bg-teal-700 shadow-primary/20'}`}
+                        >
+                            {t.submit}
+                        </button>
+
+                    </div>
+                </div>
+            );
+        };
+
+        // --- NEW: مواعيدي المكتبية (عرض المواعيد) ---
+        const OfficeHoursViewPage = ({ onBack, lang }) => {
+            const isAr = lang === 'ar';
+            
+            const t = {
+                title: isAr ? "مواعيدي المكتبية" : "My Office Hours",
+                empty: isAr ? "لا توجد مواعيد محجوزة حالياً" : "No appointments booked currently",
+                prof: isAr ? "المسؤول / الأستاذ:" : "Official/Instructor:",
+                cancelBtn: isAr ? "إلغاء الموعد" : "Cancel Appointment",
+                joinBtn: isAr ? "رابط اللقاء" : "Join Link",
+                status: {
+                    pending: isAr ? "بانتظار التأكيد" : "Pending Confirmation",
+                    confirmed: isAr ? "مؤكد" : "Confirmed",
+                    completed: isAr ? "مكتمل" : "Completed",
+                    canceled: isAr ? "ملغي" : "Canceled"
+                }
+            };
+
+            const defaultMockAppts = [
+                { id: 'APT-1', realId: 'mock1', prof: isAr ? 'د. خالد الشهري' : 'Dr. Khalid Al-Shehri', course: isAr ? 'أستاذ أمن سيبراني' : 'Instructor - CS320', date: '2026-05-28', time: '09:00 - 10:00', mode: 'online', status: 'confirmed', link: '#' },
+                { id: 'APT-3', realId: 'mock3', prof: isAr ? 'أ. محمد علي' : 'Mr. Mohamed Ali', course: isAr ? 'أستاذ تحليل كيميائي' : 'Instructor - CH202', date: '2026-04-10', time: '11:00 - 12:00', mode: 'inPerson', room: isAr ? 'معمل 3' : 'Lab 3', status: 'completed' },
+                { id: 'APT-4', realId: 'mock4', prof: isAr ? 'د. أحمد سالم' : 'Dr. Ahmed Salem', course: isAr ? 'أستاذ إحصاء هندسي' : 'Instructor - MATH101', date: '2026-04-12', time: '13:00 - 14:00', mode: 'online', status: 'canceled', link: '#' }
+            ];
+
+            const [appointments, setAppointments] = useState(defaultMockAppts);
+            useEffect(() => {
+                const reqRef = ref(db, 'office_hours');
+                onValue(reqRef, (snapshot) => {
+                    const data = snapshot.val();
+                    if(data) {
+                        const list = Object.keys(data).map(key => ({
+                            id: key.slice(-4).toUpperCase(),
+                            realId: key, // Keep original key for deletion
+                            ...data[key]
+                        }));
+                        setAppointments([...list.reverse(), ...defaultMockAppts]);
+                    } else {
+                        setAppointments(defaultMockAppts);
+                    }
+                });
+            }, []);
+
+            const cancelAppointment = (id) => {
+                if (id && id.startsWith('mock')) {
+                    if(window.confirm(isAr ? 'هل أنت متأكد من إلغاء الموعد؟' : 'Are you sure you want to cancel?')) {
+                        setAppointments(prev => prev.filter(appt => appt.realId !== id));
+                    }
+                    return;
+                }
+                if(window.confirm(isAr ? 'هل أنت متأكد من إلغاء الموعد؟' : 'Are you sure you want to cancel?')) {
+                    remove(ref(db, `office_hours/${id}`));
+                }
+            };
+
+            const getStatusStyle = (status) => {
+                switch(status) {
+                    case 'confirmed': return 'bg-green-100 text-green-700 border-green-200';
+                    case 'completed': return 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700';
+                    case 'canceled': return 'bg-red-100 text-red-700 border-red-200';
+                    default: return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+                }
+            };
+
+            return (
+                <div className="animate-fade-in space-y-6">
+                    <HeaderPage title={t.title} onBack={onBack} lang={lang} />
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        {appointments.length === 0 && <p className="text-center text-gray-500 py-10 col-span-2">{t.empty}</p>}
+                        {appointments.map(appt => (
+                            <div key={appt.id} className={`bg-white dark:bg-dark-card p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col group hover:border-primary transition-all duration-300 ${appt.status === 'completed' || appt.status === 'canceled' ? 'opacity-70 grayscale-[30%]' : ''}`}>
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-3 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-primary`}>
+                                            <User size={24}/>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-gray-800 dark:text-white text-base group-hover:text-primary transition-colors">{appt.prof}</h4>
+                                            <span className="text-xs text-gray-500 font-mono mt-0.5 block">{appt.course}</span>
+                                        </div>
+                                    </div>
+                                    <span className={`text-[10px] font-bold px-2 py-1 rounded border flex items-center gap-1 ${getStatusStyle(appt.status)}`}>
+                                        {appt.status === 'confirmed' ? <Check size={12}/> : (appt.status === 'pending' ? <Clock size={12}/> : null)}
+                                        {t.status[appt.status]}
+                                    </span>
+                                </div>
+                                
+                                <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col gap-3 mb-5 flex-1">
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-gray-500 flex items-center gap-1.5"><Calendar size={16}/> {isAr ? "الموعد" : "Date"}</span>
+                                        <span className="font-mono text-gray-800 dark:text-gray-200 font-bold dir-ltr">{appt.date}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-gray-500 flex items-center gap-1.5"><Clock size={16}/> {isAr ? "الوقت" : "Time"}</span>
+                                        <span className="font-mono text-gray-800 dark:text-gray-200 font-bold dir-ltr">{appt.time}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm border-t border-gray-200 dark:border-gray-700 pt-3 mt-1">
+                                        <span className="text-gray-500 flex items-center gap-1.5">
+                                            {appt.mode === 'online' ? <Video size={16}/> : <MapPin size={16}/>}
+                                            {isAr ? "المكان" : "Location"}
+                                        </span>
+                                        <span className={`font-bold text-xs px-2 py-1 rounded-md ${appt.mode === 'online' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30'}`}>
+                                            {appt.mode === 'online' ? (isAr ? 'عن بعد (Teams)' : 'Online (Teams)') : appt.room}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3">
+                                    {appt.status === 'confirmed' && appt.mode === 'online' && (
+                                        <a href={appt.link} className="flex-1 bg-primary/10 text-primary hover:bg-primary hover:text-white transition font-bold py-2.5 rounded-xl text-sm flex justify-center items-center gap-2 border border-primary/20 hover:border-transparent">
+                                            <Link size={16}/> {t.joinBtn}
+                                        </a>
+                                    )}
+                                    {(appt.status === 'pending' || appt.status === 'confirmed') && appt.mode !== 'online' && (
+                                        <button onClick={() => cancelAppointment(appt.realId)} className="flex-1 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition font-bold py-2.5 rounded-xl text-sm border border-red-100 hover:border-transparent flex justify-center items-center gap-2">
+                                            <X size={16}/> {t.cancelBtn}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- NEW: طلب رسالة توصية (Request Recommendation) ---
+        const NewRecommendationPage = ({ onBack, lang }) => {
+            const isAr = lang === 'ar';
+            const [submitted, setSubmitted] = useState(false);
+            const [selectedProf, setSelectedProf] = useState('');
+            const [purpose, setPurpose] = useState('');
+            const [notes, setNotes] = useState('');
+
+            const handleSubmit = () => {
+                const reqRef = ref(db, 'recommendations');
+                const prof = profs.find(p => p.id === selectedProf);
+                push(reqRef, {
+                    prof: prof ? prof.name : '',
+                    role: prof ? prof.role : '',
+                    purpose: purpose,
+                    notes: notes,
+                    date: new Date().toISOString().split('T')[0],
+                    status: 'pending'
+                }).then(() => setSubmitted(true));
+            };
+
+            const t = {
+                title: isAr ? "طلب رسالة توصية" : "Request Recommendation Letter",
+                desc: isAr ? "يمكنك طلب رسالة توصية أكاديمية من أساتذتك لدعم تقديمك على برامج الدراسات العليا أو الوظائف." : "You can request an academic recommendation letter from your professors to support your application for graduate studies or jobs.",
+                selectProf: isAr ? "اختر عضو هيئة التدريس" : "Select Instructor",
+                defaultProf: isAr ? "-- اختر الأستاذ --" : "-- Select Professor --",
+                purposeLabel: isAr ? "الغرض من التوصية" : "Purpose of Recommendation",
+                purposePlaceholder: isAr ? "مثال: التقديم على برنامج الماجستير في جامعة كذا..." : "e.g., Applying for Master's program at...",
+                notesLabel: isAr ? "ملاحظات إضافية (اختياري)" : "Additional Notes (Optional)",
+                notesPlaceholder: isAr ? "اكتب أي تفاصيل تود إضافتها في رسالة التوصية كالمشاريع المميزة التي أنجزتها معه..." : "Write any details you'd like highlighted, like projects you completed...",
+                submit: isAr ? "إرسال الطلب" : "Submit Request",
+                successTitle: isAr ? "تم إرسال الطلب بنجاح" : "Request Submitted Successfully",
+                successDesc: isAr ? "تم توجيه طلبك للدكتور، يمكنك متابعة حالة الطلب وتحميل التوصية من صفحة 'التوصيات الأكاديمية'." : "Your request has been sent to the professor. You can track its status and download the letter from the 'Academic Recommendations' page.",
+                backMenu: isAr ? "عودة للقائمة" : "Back to Menu"
+            };
+
+            const profs = [
+                { id: 'p1', name: isAr ? 'د. أحمد سالم' : 'Dr. Ahmed Salem', role: isAr ? 'أستاذ مقرر الإحصاء الهندسي' : 'Instructor - MATH101' },
+                { id: 'p2', name: isAr ? 'د. خالد الشهري' : 'Dr. Khalid Al-Shehri', role: isAr ? 'أستاذ مقرر أمن سيبراني' : 'Instructor - CS320' },
+                { id: 'p3', name: isAr ? 'أ. محمد علي' : 'Mr. Mohamed Ali', role: isAr ? 'أستاذ مقرر تحليل كيميائي' : 'Instructor - CH202' },
+                { id: 'p4', name: isAr ? 'أ.د. فهد الزهراني' : 'Prof. Fahad Al-Zahrani', role: isAr ? 'عميد كلية الحاسب الآلي' : 'Dean of Computer College' }
+            ];
+
+            if(submitted) {
+                return (
+                    <div className="animate-fade-in text-center py-20">
+                        <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6"><CheckCircle2 size={40}/></div>
+                        <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">{t.successTitle}</h3>
+                        <p className="text-gray-500 mb-6 px-4">{t.successDesc}</p>
+                        <button onClick={onBack} className="bg-gray-100 text-gray-700 px-6 py-2 rounded-lg font-bold hover:bg-gray-200 transition">{t.backMenu}</button>
+                    </div>
+                )
+            }
+
+            return (
+                <div className="animate-fade-in space-y-6">
+                    <HeaderPage title={t.title} onBack={onBack} lang={lang} />
+                    
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 p-4 rounded-xl flex gap-3 text-blue-800 dark:text-blue-200 text-sm">
+                        <FileSignature size={20} className="shrink-0"/>
+                        <p>{t.desc}</p>
+                    </div>
+
+                    <div className="bg-white dark:bg-dark-card p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm space-y-5">
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t.selectProf}</label>
+                            <div className="relative">
+                                <select 
+                                    className="w-full p-3 pr-10 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none appearance-none text-gray-700 dark:text-gray-200"
+                                    value={selectedProf}
+                                    onChange={(e) => setSelectedProf(e.target.value)}
+                                >
+                                    <option value="" disabled>{t.defaultProf}</option>
+                                    {profs.map(p => (
+                                        <option key={p.id} value={p.id}>{p.name} ({p.role})</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18}/>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t.purposeLabel}</label>
+                            <input 
+                                type="text" 
+                                className="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none text-gray-700 dark:text-gray-200" 
+                                placeholder={t.purposePlaceholder}
+                                value={purpose}
+                                onChange={(e) => setPurpose(e.target.value)}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t.notesLabel}</label>
+                            <textarea 
+                                className="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:border-primary outline-none h-28 text-gray-700 dark:text-gray-200" 
+                                placeholder={t.notesPlaceholder}
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                            ></textarea>
+                        </div>
+
+                        <button 
+                            onClick={handleSubmit} 
+                            disabled={!selectedProf || !purpose}
+                            className={`w-full font-bold py-3 rounded-xl transition shadow-lg ${(!selectedProf || !purpose) ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' : 'bg-primary text-white hover:bg-teal-700 shadow-primary/20'}`}
+                        >
+                            {t.submit}
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- NEW: عرض التوصيات الأكاديمية (View Recommendations) ---
+        const ViewRecommendationsPage = ({ onBack, lang }) => {
+            const isAr = lang === 'ar';
+            
+            const t = {
+                title: isAr ? "التوصيات الأكاديمية" : "Academic Recommendations",
+                empty: isAr ? "لا توجد طلبات توصية مسجلة" : "No recommendation requests found",
+                prof: isAr ? "مقدم التوصية:" : "Professor:",
+                purpose: isAr ? "الغرض:" : "Purpose:",
+                download: isAr ? "تحميل التوصية (PDF)" : "Download PDF",
+                reqDate: isAr ? "تاريخ الطلب:" : "Req Date:",
+                status: {
+                    approved: isAr ? "مكتملة ومتاحة للتحميل" : "Completed & Available",
+                    pending: isAr ? "بانتظار رد الدكتور" : "Awaiting Professor",
+                    rejected: isAr ? "مرفوضة" : "Rejected"
+                }
+            };
+
+            const defaultMockRecs = [
+                { id: 'REC-3912', prof: isAr ? 'د. أحمد سالم' : 'Dr. Ahmed Salem', role: isAr ? 'أستاذ مقرر الإحصاء الهندسي' : 'Instructor - MATH101', purpose: isAr ? 'التقديم على برنامج الماجستير' : 'Applying for Master\'s Program', date: '2026-05-18', status: 'approved' },
+                { id: 'REC-8291', prof: isAr ? 'د. خالد الشهري' : 'Dr. Khalid Al-Shehri', role: isAr ? 'أستاذ مقرر أمن سيبراني' : 'Instructor - CS320', purpose: isAr ? 'التقديم على برنامج الماجستير' : 'Applying for Master\'s Program', date: '2026-05-19', status: 'rejected' }
+            ];
+
+            const [recommendations, setRecommendations] = useState(defaultMockRecs);
+            useEffect(() => {
+                const reqRef = ref(db, 'recommendations');
+                onValue(reqRef, (snapshot) => {
+                    const data = snapshot.val();
+                    if(data) {
+                        const list = Object.keys(data).map(key => ({
+                            id: key.slice(-4).toUpperCase(),
+                            ...data[key]
+                        }));
+                        setRecommendations([...list.reverse(), ...defaultMockRecs]);
+                    } else {
+                        setRecommendations(defaultMockRecs);
+                    }
+                });
+            }, []);
+
+            const getStatusStyle = (status) => {
+                switch(status) {
+                    case 'approved': return 'bg-green-100 text-green-700 border-green-200';
+                    case 'rejected': return 'bg-red-100 text-red-700 border-red-200';
+                    default: return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+                }
+            };
+
+            return (
+                <div className="animate-fade-in space-y-6">
+                    <HeaderPage title={t.title} onBack={onBack} lang={lang} />
+                    
+                    <div className="space-y-4">
+                        {recommendations.length === 0 ? (
+                            <div className="text-center py-10 text-gray-500">{t.empty}</div>
+                        ) : (
+                            recommendations.map(rec => (
+                                <div key={rec.id} className="bg-white dark:bg-dark-card p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-3 bg-gray-50 dark:bg-gray-800 text-primary rounded-xl border border-gray-100 dark:border-gray-700">
+                                                <FileSignature size={24}/>
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-gray-800 dark:text-white text-base">{rec.prof}</h4>
+                                                <span className="text-xs text-gray-500 font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded mt-1 inline-block">{rec.role}</span>
+                                            </div>
+                                        </div>
+                                        <span className={`text-[10px] font-bold px-2 py-1 rounded border flex items-center gap-1 ${getStatusStyle(rec.status)}`}>
+                                            {rec.status === 'approved' ? <CheckCircle2 size={12}/> : (rec.status === 'pending' ? <Clock size={12}/> : <X size={12}/>)}
+                                            {t.status[rec.status]}
+                                        </span>
+                                    </div>
+                                    
+                                    <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col gap-2 mb-4 flex-1">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-500">{t.purpose}</span>
+                                            <span className="font-bold text-gray-800 dark:text-white">{rec.purpose}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-500">{t.reqDate}</span>
+                                            <span className="font-mono text-gray-600 dark:text-gray-300">{rec.date}</span>
+                                        </div>
+                                    </div>
+
+                                    {rec.status === 'approved' && (
+                                        <button className="w-full bg-primary/10 text-primary hover:bg-primary hover:text-white transition font-bold py-2.5 rounded-xl text-sm flex justify-center items-center gap-2 border border-primary/20 hover:border-transparent">
+                                            <Download size={18}/> {t.download}
+                                        </button>
+                                    )}
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
         // 15. الانسحاب من مقرر
         const WithdrawPage = ({ onBack, lang }) => {
             const isAr = lang === 'ar';
+            const [confirmWithdraw, setConfirmWithdraw] = useState(null);
+            const [toastMsg, setToastMsg] = useState(null);
             
             const t = {
                 title: isAr ? "الانسحاب من مقرر" : "Course Withdrawal",
                 warning: isAr ? "تنبيه: الانسحاب من المقرر سيؤدي إلى رصد تقدير (ع) في سجلك الأكاديمي ولن يدخل في احتساب المعدل، ولكن ستحسب الساعات ضمن الحد الأقصى المسموح به." 
                               : "Warning: Course withdrawal will result in a (W) grade in your academic record. It will not affect your GPA but will count towards the maximum allowed hours.",
                 withdrawBtn: isAr ? "انسحاب" : "Withdraw",
-                confirmPre: isAr ? "سيتم رصد تقدير (ع) لمقرر" : "A grade of (W) will be recorded for course",
-                confirmPost: isAr ? ". هل أنت متأكد؟" : ". Are you sure?"
+                confirmPre: isAr ? "هل أنت متأكد من رغبتك في الانسحاب من مقرر" : "Are you sure you want to withdraw from course",
+                confirmPost: isAr ? "؟ سيتم رصد تقدير (ع)." : "? A grade of (W) will be recorded.",
+                confirmAction: isAr ? "تأكيد الانسحاب" : "Confirm Withdrawal",
+                cancel: isAr ? "إلغاء" : "Cancel",
+                success: isAr ? "تم إرسال طلب الانسحاب بنجاح" : "Withdrawal request submitted successfully"
             };
 
             const courses = [
-                { code: 'CS101', nameAr: 'مقدمة في البرمجة', nameEn: 'Intro to Programming' },
-                { code: 'MATH101', nameAr: 'تفاضل وتكامل', nameEn: 'Calculus' }
+                { id: 1, code: 'CS101', nameAr: 'مقدمة في البرمجة', nameEn: 'Intro to Programming' },
+                { id: 2, code: 'MATH101', nameAr: 'تفاضل وتكامل', nameEn: 'Calculus' }
             ];
             
             const handleWithdraw = (c) => {
-                const name = isAr ? c.nameAr : c.nameEn;
-                alert(`${t.confirmPre} ${name}${t.confirmPost}`);
+                setConfirmWithdraw(c);
+            };
+
+            const executeWithdraw = () => {
+                const reqRef = ref(db, 'registration_requests');
+                push(reqRef, {
+                    typeKey: 'withdraw',
+                    course: confirmWithdraw.code,
+                    date: new Date().toISOString().split('T')[0],
+                    status: 'pending'
+                }).then(() => {
+                    setConfirmWithdraw(null);
+                    setToastMsg({ type: 'success', text: t.success });
+                    setTimeout(() => setToastMsg(null), 3000);
+                });
             };
 
             return (
                 <div className="animate-fade-in space-y-6">
                     <HeaderPage title={t.title} onBack={onBack} lang={lang} />
+                    
+                    <CountdownTimer 
+                        title={isAr ? "يغلق باب الانسحاب خلال" : "Withdrawal period ends in"} 
+                        description={isAr ? "يمكنك الانسحاب من المقررات قبل إغلاق الفترة المحددة" : "You can withdraw from courses before the period ends"}
+                        initialDays={3} 
+                        lang={lang} 
+                    />
+
+                    {toastMsg && <Toast message={toastMsg.text} type={toastMsg.type} onClose={() => setToastMsg(null)} />}
+                    
+                    {confirmWithdraw && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setConfirmWithdraw(null)}>
+                            <div className="bg-white dark:bg-dark-card w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700 transform transition-all p-6" onClick={e => e.stopPropagation()}>
+                                <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4"><AlertTriangle size={32}/></div>
+                                <h3 className="text-lg font-bold text-center mb-2 text-gray-800 dark:text-white">{isAr ? confirmWithdraw.nameAr : confirmWithdraw.nameEn}</h3>
+                                <p className="text-sm text-gray-500 text-center mb-6 leading-relaxed">
+                                    {t.confirmPre} <span className="font-bold text-gray-800 dark:text-gray-200">{isAr ? confirmWithdraw.nameAr : confirmWithdraw.nameEn}</span>{t.confirmPost}
+                                </p>
+                                <div className="flex gap-3">
+                                    <button onClick={executeWithdraw} className="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 transition shadow-lg shadow-red-600/20 active:scale-95">{t.confirmAction}</button>
+                                    <button onClick={() => setConfirmWithdraw(null)} className="flex-1 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 font-bold py-3 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition">{t.cancel}</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 p-4 rounded-xl flex gap-3">
                         <AlertTriangle className="text-red-600 shrink-0"/>
                         <p className="text-sm text-red-700 dark:text-red-200">{t.warning}</p>
@@ -2394,12 +3570,14 @@
                     
                     <div className="space-y-3">
                         {courses.map((c, i) => (
-                            <div key={i} className="bg-white dark:bg-dark-card p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex justify-between items-center shadow-sm">
+                            <div key={i} className="bg-white dark:bg-dark-card p-4 rounded-xl border border-gray-200 dark:border-gray-700 flex justify-between items-center shadow-sm hover:border-red-200 transition-colors">
                                 <div>
                                     <h4 className="font-bold text-gray-800 dark:text-white">{isAr ? c.nameAr : c.nameEn}</h4>
-                                    <span className="text-xs font-mono text-gray-500">{c.code}</span>
+                                    <span className="text-xs font-mono text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded mt-1 inline-block">{c.code}</span>
                                 </div>
-                                <button onClick={() => handleWithdraw(c)} className="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-600 hover:text-white transition border border-red-100">{t.withdrawBtn}</button>
+                                <button onClick={() => handleWithdraw(c)} className="bg-red-50 text-red-600 px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-red-600 hover:text-white transition border border-red-100 active:scale-95 flex items-center gap-2">
+                                    <MinusCircle size={16}/> {t.withdrawBtn}
+                                </button>
                             </div>
                         ))}
                     </div>
@@ -2842,7 +4020,7 @@
             );
         };
 
-        // --- NEW: صفحة حسابي (User Account) ---
+        // 19. صفحة حسابي (User Account)
         const UserAccountPage = ({ onBack, lang }) => {
             const user = {
                 name: "فيصل عبدالله الخالد",
@@ -2857,8 +4035,10 @@
                 advisorEmail: "advisor@uqu.edu.sa"
             };
 
-            const handleEmailAdvisor = () => {
-                window.location.href = `mailto:${user.advisorEmail}`;
+            const handleEmailAdvisor = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                window.open(`mailto:${user.advisorEmail}`, '_blank');
             };
 
             return (
@@ -2916,6 +4096,7 @@
                         </div>
                         <button 
                             onClick={handleEmailAdvisor}
+                            type="button"
                             className="flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-teal-700 transition shadow-lg shadow-primary/20 active:scale-95"
                         >
                             <Send size={16} className="rotate-180" />
@@ -2996,6 +4177,19 @@
                 { name: 'General Physics', absencePct: 16, excused: false },      
             ];
 
+            // NEW: Deadlines Tokens
+            const deadlines = isAr ? [
+                { title: "إضافة مقرر (القسم)", time: "يغلق بعد يومين", icon: <PlusCircle size={16}/>, color: "text-blue-700 bg-blue-50 border-blue-200 dark:text-blue-300 dark:bg-blue-900/30 dark:border-blue-800", route: 'dept-add' },
+                { title: "تغيير شعبة (القسم)", time: "يغلق بعد يومين", icon: <RefreshCw size={16}/>, color: "text-indigo-700 bg-indigo-50 border-indigo-200 dark:text-indigo-300 dark:bg-indigo-900/30 dark:border-indigo-800", route: 'dept-change' },
+                { title: "طلب تغيير التخصص", time: "يغلق غداً", icon: <Layers size={16}/>, color: "text-red-700 bg-red-50 border-red-200 dark:text-red-300 dark:bg-red-900/30 dark:border-red-800", route: 'major-change-new' },
+                { title: "الحركات الأكاديمية", time: "يغلق بعد 5 أيام", icon: <FileText size={16}/>, color: "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-300 dark:bg-amber-900/30 dark:border-amber-800", route: 'academic-action-new' }
+            ] : [
+                { title: "Dept Add Course", time: "Closes in 2 days", icon: <PlusCircle size={16}/>, color: "text-blue-700 bg-blue-50 border-blue-200 dark:text-blue-300 dark:bg-blue-900/30 dark:border-blue-800", route: 'dept-add' },
+                { title: "Dept Change Sec", time: "Closes in 2 days", icon: <RefreshCw size={16}/>, color: "text-indigo-700 bg-indigo-50 border-indigo-200 dark:text-indigo-300 dark:bg-indigo-900/30 dark:border-indigo-800", route: 'dept-change' },
+                { title: "Major Change", time: "Closes tomorrow", icon: <Layers size={16}/>, color: "text-red-700 bg-red-50 border-red-200 dark:text-red-300 dark:bg-red-900/30 dark:border-red-800", route: 'major-change-new' },
+                { title: "Academic Actions", time: "Closes in 5 days", icon: <FileText size={16}/>, color: "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-300 dark:bg-amber-900/30 dark:border-amber-800", route: 'academic-action-new' }
+            ];
+
             return (
                 <div className="space-y-8 animate-fade-in">
                     {/* Persistent Notification Banner */}
@@ -3017,6 +4211,24 @@
                             <ActionCard icon={<Calendar size={24}/>} title={t.schedule} onClick={() => openService('schedule')} />
                             <ActionCard icon={<FileText size={24}/>} title={t.results} onClick={() => openService('results')} color="gold" />
                             <ActionCard icon={<RefreshCw size={24}/>} title={t.addDrop} onClick={() => openService('addDrop')} color="blue" />
+                        </div>
+                    </div>
+
+                    {/* NEW: Deadlines Tokens Section */}
+                    <div>
+                        <h3 className="text-sm font-bold text-gray-400 uppercase mb-3 tracking-wider flex items-center gap-2">
+                            <div className="w-1 h-4 bg-red-500 rounded-full"></div> {isAr ? "مواعيد تنتهي قريباً" : "Expiring Soon"}
+                        </h3>
+                        <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar w-full">
+                            {deadlines.map((item, idx) => (
+                                <button key={idx} onClick={() => openService(item.route)} className={`flex-none flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-transform hover:-translate-y-1 active:scale-95 shadow-sm ${item.color}`}>
+                                    <div className="bg-white/60 dark:bg-black/20 p-2 rounded-lg backdrop-blur-sm">{item.icon}</div>
+                                    <div className={`text-left ${isAr ? 'text-right' : ''}`}>
+                                        <h4 className="font-bold text-[12px] leading-tight">{item.title}</h4>
+                                        <span className="text-[10px] flex items-center gap-1 font-medium opacity-80 mt-0.5"><Clock size={10}/> {item.time}</span>
+                                    </div>
+                                </button>
+                            ))}
                         </div>
                     </div>
 
@@ -3043,7 +4255,7 @@
                         </div>
 
                         <div className="bg-white dark:bg-dark-card rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col h-full min-h-[250px]">
-                            <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50"><h3 className="font-bold text-primary flex items-center gap-2 text-sm"><Clock size={16}/> {t.todaysLectures}</h3><span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded font-bold">3</span></div>
+                            <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50"><h3 className="font-bold text-primary flex items-center gap-2 text-sm"><Clock size={16}/> {t.todaysLectures}</h3><div className="flex items-center gap-2"><span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded font-bold">3</span><button onClick={() => openService('schedule')} className="text-xs text-primary font-bold hover:bg-primary/10 px-2 py-1 rounded transition">{t['view-all']}</button></div></div>
                             <div className="p-4 space-y-4 flex-1 overflow-y-auto">
                                 <div className="flex gap-4 opacity-50"><div className="flex flex-col items-center"><div className="w-3 h-3 rounded-full bg-gray-300"></div><div className="w-0.5 h-full bg-gray-200 my-1"></div></div><div><h4 className="font-bold text-gray-500 text-sm line-through">{isAr ? "إحصاء هندسي" : "Engineering Statistics"}</h4><p className="text-xs text-gray-400">08:00 - 09:50</p></div></div>
                                 <div className="flex gap-4"><div className="flex flex-col items-center"><div className="w-3 h-3 rounded-full bg-primary ring-4 ring-teal-100 animate-pulse"></div><div className="w-0.5 h-full bg-gray-200 my-1"></div></div><div className="bg-teal-50 p-3 rounded-lg border border-teal-100 w-full"><h4 className="font-bold text-primary text-sm">{isAr ? "تحليل كيميائي" : "Chemical Analysis"}</h4><p className="text-xs text-gray-600 mt-1">{isAr ? "معمل 3" : "Lab 3"} • {t.now}</p></div></div>
@@ -3054,7 +4266,7 @@
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className="bg-white dark:bg-dark-card p-5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
-                            <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-gray-800 dark:text-white flex items-center gap-2"><span className="w-1 h-5 bg-primary rounded-full"></span>{t.upcomingExams}</h3><button className="text-xs text-primary font-bold hover:bg-primary/5 px-2 py-1 rounded">{t['view-all']}</button></div>
+                            <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-gray-800 dark:text-white flex items-center gap-2"><span className="w-1 h-5 bg-primary rounded-full"></span>{t.upcomingExams}</h3><button onClick={() => openService('exams')} className="text-xs text-primary font-bold hover:bg-primary/5 px-2 py-1 rounded transition">{t['view-all']}</button></div>
                             <div className="space-y-3">
                                 {upcomingExams.map((exam, i) => (
                                     <div key={i} className="flex gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 relative overflow-hidden">
@@ -3068,7 +4280,7 @@
                         </div>
 
                         <div className="bg-white dark:bg-dark-card p-5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
-                            <h3 className="font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2"><span className="w-1 h-5 bg-primary rounded-full"></span>{t.attendance}</h3>
+                            <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-gray-800 dark:text-white flex items-center gap-2"><span className="w-1 h-5 bg-primary rounded-full"></span>{t.attendance}</h3><button onClick={() => openService('absences')} className="text-xs text-primary font-bold hover:bg-primary/5 px-2 py-1 rounded transition">{t['view-all']}</button></div>
                              <div className="space-y-6">
                                 {attendanceData.map((item, idx) => {
                                     const progressPercent = Math.min((item.absencePct / 25) * 100, 100);
@@ -3116,16 +4328,73 @@
             const [darkMode, setDarkMode] = useState(false);
             const [lang, setLang] = useState('ar');
             const [menuOpen, setMenuOpen] = useState(false);
+            const [zoomLevel, setZoomLevel] = useState(100);
+            const [isReaderActive, setIsReaderActive] = useState(false);
+            const [settingsOpen, setSettingsOpen] = useState(false);
+            
+            // --- New Accessibility States ---
+            const [reduceMotion, setReduceMotion] = useState(false);
+            const [highlightLinks, setHighlightLinks] = useState(false);
 
             useEffect(() => { document.documentElement.classList.toggle('dark', darkMode); }, [darkMode]);
             // IMPORTANT: Ensure correct directory switching
             useEffect(() => { document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'; }, [lang]);
+            // Apply global font scaling
+            useEffect(() => { document.documentElement.style.fontSize = `${zoomLevel}%`; }, [zoomLevel]);
+
+            // Apply Reduce Motion
+            useEffect(() => {
+                if (reduceMotion) document.documentElement.classList.add('reduce-motion');
+                else document.documentElement.classList.remove('reduce-motion');
+            }, [reduceMotion]);
+
+            // Apply Highlight Links
+            useEffect(() => {
+                if (highlightLinks) document.documentElement.classList.add('highlight-links');
+                else document.documentElement.classList.remove('highlight-links');
+            }, [highlightLinks]);
+
+            // Click-to-read logic (القارئ الصوتي عند الضغط على النصوص)
+            useEffect(() => {
+                const handleScreenClick = (e) => {
+                    if (!isReaderActive) return;
+                    
+                    // إيقاف أي قراءة سابقة
+                    window.speechSynthesis.cancel(); 
+                    
+                    // جلب النص الخاص بالعنصر الذي تم الضغط عليه تحديداً
+                    const textToRead = e.target.innerText || e.target.textContent;
+                    
+                    if (textToRead && textToRead.trim() !== '') {
+                        const utterance = new SpeechSynthesisUtterance(textToRead.trim());
+                        utterance.lang = lang === 'ar' ? 'ar-SA' : 'en-US';
+                        utterance.rate = 0.9; // سرعة قراءة مناسبة للوضوح
+                        
+                        window.speechSynthesis.speak(utterance);
+                    }
+                };
+
+                if (isReaderActive) {
+                    // تفعيل مراقب الضغطات على مستوى الصفحة
+                    document.addEventListener('click', handleScreenClick);
+                } else {
+                    // إيقاف القراءة تماماً عند إغلاق الميزة
+                    window.speechSynthesis.cancel();
+                }
+
+                return () => {
+                    document.removeEventListener('click', handleScreenClick);
+                };
+            }, [isReaderActive, lang]);
+
+            const toggleSpeech = () => {
+                setIsReaderActive(!isReaderActive);
+            };
 
             const t = translations[lang];
             const isAr = lang === 'ar';
 
             const goHome = () => setView('home');
-            const goToNotifications = () => setView('notifications');
 
             // --- Menu Structure Updated ---
             const menuItems = [
@@ -3134,6 +4403,7 @@
                     id: 'academic', icon: <GraduationCap size={20}/>,
                     subItems: [
                         { id: 'schedule' },
+                        { id: 'academic-events' }, // Added here
                         { id: 'exams' }, 
                         { id: 'plan' },
                         { id: 'results' },
@@ -3149,6 +4419,7 @@
                         { id: 'dept-add' },
                         { id: 'dept-change' },
                         { id: 'dept-drop' },
+                        { id: 'dept-multi' }, // NEW ITEM HERE
                         { id: 'reg-requests' },
                         { id: 'withdraw' }
                     ]
@@ -3159,7 +4430,11 @@
                         { id: 'academic-action-new' },
                         { id: 'academic-action-view' },
                         { id: 'major-change-new' },
-                        { id: 'major-change-view' }
+                        { id: 'major-change-view' },
+                        { id: 'recommendation-new' }, // NEW ITEM
+                        { id: 'recommendation-view' }, // NEW ITEM
+                        { id: 'office-hours-book' },
+                        { id: 'office-hours-view' }
                     ]
                 },
                 {
@@ -3179,13 +4454,17 @@
                 setActiveCategory(activeCategory === id ? null : id);
             };
 
+            // Shared handler for notifications
+            const openNotifications = () => setView('notifications');
+
             const renderContent = () => {
                 switch(view) {
                     case 'student-dashboard': return <StudentDashboardPage onBack={goHome} lang={lang} />; 
-                    case 'notifications': return <NotificationsPage onBack={goHome} lang={lang} />;
+                    case 'notifications': return <NotificationsPage onBack={goHome} lang={lang} />; // Added Route
+                    case 'academic-events': return <AcademicEventsPage onBack={goHome} lang={lang} />;
                     case 'schedule': return <SchedulePage onBack={goHome} t={t} lang={lang} />;
                     case 'plan': return <PlanPage onBack={goHome} t={t} lang={lang} />;
-                    case 'results': return <ResultsPage onBack={goHome} t={t} lang={lang} onShowNotifications={goToNotifications} />;
+                    case 'results': return <ResultsPage onBack={goHome} t={t} lang={lang} onOpenNotifications={openNotifications} />;
                     case 'addDrop': return <AddDropPage onBack={goHome} t={t} lang={lang} />;
                     
                     // Registration Views
@@ -3193,6 +4472,7 @@
                     case 'dept-add': return <DepartmentRequestPage onBack={goHome} type="add" lang={lang} />;
                     case 'dept-change': return <DepartmentRequestPage onBack={goHome} type="change" lang={lang} />;
                     case 'dept-drop': return <DepartmentRequestPage onBack={goHome} type="drop" lang={lang} />;
+                    case 'dept-multi': return <MultiRequestPage onBack={goHome} lang={lang} />; // NEW ROUTE
                     case 'reg-requests': return <RegistrationRequestsPage onBack={goHome} lang={lang} />;
                     case 'withdraw': return <WithdrawPage onBack={goHome} lang={lang} />;
 
@@ -3200,13 +4480,17 @@
                     case 'exams': return <ExamsPage onBack={goHome} lang={lang} />;
                     case 'e-reg': return <RegistrationPage onBack={goHome} lang={lang} />;
                     case 'absences': return <AbsencesPage onBack={goHome} lang={lang} />;
-                    case 'record': return <AcademicRecordPage onBack={goHome} lang={lang} t={t} onShowNotifications={goToNotifications} />; // Pass t to AcademicRecordPage
+                    case 'record': return <AcademicRecordPage onBack={goHome} lang={lang} t={t} onOpenNotifications={openNotifications} />; 
                     
                     // Requests Views
                     case 'academic-action-new': return <NewAcademicActionPage onBack={goHome} lang={lang} />;
                     case 'academic-action-view': return <ViewAcademicActionsPage onBack={goHome} lang={lang} />;
                     case 'major-change-new': return <MajorChangeRequestPage onBack={goHome} lang={lang} />;
                     case 'major-change-view': return <ViewMajorChangeRequestsPage onBack={goHome} lang={lang} />;
+                    case 'recommendation-new': return <NewRecommendationPage onBack={goHome} lang={lang} />; // NEW ROUTE
+                    case 'recommendation-view': return <ViewRecommendationsPage onBack={goHome} lang={lang} />; // NEW ROUTE
+                    case 'office-hours-book': return <OfficeHoursBookPage onBack={goHome} lang={lang} />;
+                    case 'office-hours-view': return <OfficeHoursViewPage onBack={goHome} lang={lang} />;
 
                     // Personal Views
                     case 'id-photo': return <PersonalPage onBack={goHome} activeView="id-photo" lang={lang} />;
@@ -3298,15 +4582,90 @@
                         <header className="bg-white/80 dark:bg-dark-card/80 backdrop-blur-md sticky top-0 z-30 border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex justify-between items-center shadow-sm">
                             <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden p-2 hover:bg-gray-100 rounded-lg"><Menu size={24} className="text-gray-600"/></button>
                             <h2 className="text-xl font-bold text-gray-800 dark:text-white">{t[view] || t.dashboard}</h2>
-                            <div className="flex gap-3">
-                                <NotificationBell t={t} onClick={goToNotifications} /> {/* Added Notification Bell to Main Header */}
-                                <button onClick={() => setLang(lang === 'ar'?'en':'ar')} className="p-2 bg-gray-100 rounded-full text-xs font-bold w-10 h-10">EN/ع</button>
-                                <button onClick={() => setDarkMode(!darkMode)} className="p-2 bg-gray-100 rounded-full">{darkMode ? <Sun size={20}/> : <Moon size={20}/>}</button>
+                            <div className="flex gap-2 sm:gap-3 items-center relative">
+                                
+                                {/* Language Toggle Button */}
+                                <button 
+                                    onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')} 
+                                    className="px-2.5 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg text-xs md:text-sm font-bold text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600 transition shadow-sm flex items-center justify-center font-mono"
+                                    title={lang === 'ar' ? 'Switch to English' : 'التبديل للعربية'}
+                                >
+                                    {lang === 'ar' ? 'En' : 'عربي'}
+                                </button>
+
+                                <NotificationBell onClick={openNotifications} /> 
+                                
+                                <div className="relative">
+                                    <button 
+                                        onClick={() => setSettingsOpen(!settingsOpen)}
+                                        className={`p-2 rounded-lg transition-all shadow-sm flex items-center justify-center gap-1.5 ${settingsOpen || reduceMotion || highlightLinks || isReaderActive ? 'bg-primary text-white shadow-primary/20' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                                        title={isAr ? "إمكانية الوصول" : "Accessibility"}
+                                    >
+                                        <Accessibility size={20} className={settingsOpen ? "scale-110 transition-transform" : "transition-transform"} />
+                                    </button>
+
+                                    {settingsOpen && (
+                                        <>
+                                            <div className="fixed inset-0 z-40" onClick={() => setSettingsOpen(false)}></div>
+                                            <div className={`absolute top-full mt-3 ${isAr ? 'left-0' : 'right-0'} w-72 bg-white dark:bg-dark-card rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 z-50 p-5 animate-fade-in`}>
+                                                <h4 className="text-sm font-bold text-gray-800 dark:text-white mb-4 border-b border-gray-100 dark:border-gray-700 pb-3 flex items-center gap-2">
+                                                    <Accessibility size={18} className="text-primary"/>
+                                                    {isAr ? 'إمكانية الوصول' : 'Accessibility'}
+                                                </h4>
+                                                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+                                                    {/* Language */}
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-xs font-bold text-gray-600 dark:text-gray-300">{isAr ? 'اللغة' : 'Language'}</span>
+                                                        <button onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')} className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs font-bold text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm border border-gray-200 dark:border-gray-600">
+                                                            {lang === 'ar' ? 'English' : 'العربية'}
+                                                        </button>
+                                                    </div>
+                                                    {/* Dark Mode */}
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-xs font-bold text-gray-600 dark:text-gray-300">{isAr ? 'المظهر' : 'Theme'}</span>
+                                                        <button onClick={() => setDarkMode(!darkMode)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-yellow-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm border border-gray-200 dark:border-gray-600">
+                                                            {darkMode ? <Sun size={16}/> : <Moon size={16} className="text-gray-600 dark:text-gray-300"/>}
+                                                        </button>
+                                                    </div>
+                                                    {/* Font Size */}
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-xs font-bold text-gray-600 dark:text-gray-300">{isAr ? 'حجم الخط' : 'Font Size'} ({zoomLevel}%)</span>
+                                                        <div className="flex gap-1.5">
+                                                            <button onClick={() => setZoomLevel(prev => Math.min(prev + 10, 130))} className="p-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs font-bold w-8 h-8 flex items-center justify-center text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm border border-gray-200 dark:border-gray-600">A+</button>
+                                                            <button onClick={() => setZoomLevel(prev => Math.max(prev - 10, 80))} className="p-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs font-bold w-8 h-8 flex items-center justify-center text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition shadow-sm border border-gray-200 dark:border-gray-600">A-</button>
+                                                        </div>
+                                                    </div>
+                                                    {/* Screen Reader */}
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-xs font-bold text-gray-600 dark:text-gray-300">{isAr ? 'القارئ الصوتي' : 'Screen Reader'}</span>
+                                                        <button onClick={toggleSpeech} className={`p-2 rounded-lg transition-all shadow-sm border ${isReaderActive ? 'bg-primary text-white border-primary' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
+                                                            {isReaderActive ? <Volume2 size={16} className="animate-pulse"/> : <VolumeX size={16}/>}
+                                                        </button>
+                                                    </div>
+                                                    {/* Highlight Links */}
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-xs font-bold text-gray-600 dark:text-gray-300">{isAr ? 'تمييز الأزرار والروابط' : 'Highlight Links'}</span>
+                                                        <button onClick={() => setHighlightLinks(!highlightLinks)} className={`p-2 rounded-lg transition-all shadow-sm border ${highlightLinks ? 'bg-primary text-white border-primary' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
+                                                            <MousePointerClick size={16}/>
+                                                        </button>
+                                                    </div>
+                                                    {/* Reduce Motion */}
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-xs font-bold text-gray-600 dark:text-gray-300">{isAr ? 'إيقاف الحركات' : 'Reduce Motion'}</span>
+                                                        <button onClick={() => setReduceMotion(!reduceMotion)} className={`p-2 rounded-lg transition-all shadow-sm border ${reduceMotion ? 'bg-primary text-white border-primary' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
+                                                            <Activity size={16}/>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </header>
-                        <div className="p-6 max-w-7xl mx-auto">{renderContent()}</div>
+                        <div id="main-content" className="p-6 max-w-7xl mx-auto">{renderContent()}</div>
                         {/* Chatbot integrated globally */}
-                        <Chatbot t={t} />
+                        <Chatbot t={t} lang={lang} />
                     </main>
                 </div>
             );
