@@ -49,7 +49,16 @@
              background-color: #1e293b;
         }
         
-        /* Chatbot Animations */
+        /* Accessibility Styles */
+        .highlight-links button, .highlight-links a { 
+            outline: 3px solid #f59e0b !important; 
+            outline-offset: 2px !important; 
+        }
+        .stop-animations *, .stop-animations { 
+            animation: none !important; 
+            transition: none !important; 
+        }
+
         .chat-open { animation: scaleIn 0.2s ease-out forwards; transform-origin: bottom left; }
         @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
@@ -79,7 +88,8 @@
             Link, Check, AlertTriangle, Moon, Sun, Send, MessageCircle, Lock,
             ChevronDown, ChevronLeft, CreditCard, FileBadge, Image as ImageIcon, 
             Ban, Gift, ScrollText, Upload, Wallet, FileSignature, Camera,
-            ShieldAlert, Award, Hash, Menu, Mail, MoreVertical, FileCheck, Layers, Bot, Mic
+            ShieldAlert, Award, Hash, Menu, Mail, MoreVertical, FileCheck, Layers, Bot, Mic,
+            Battery, Wifi, Signal, GripHorizontal, Accessibility, Type, Volume2, MousePointerClick, Pause, RotateCcw
         } from 'lucide-react';
 
         // --- Mock Data & Translations ---
@@ -179,19 +189,19 @@
                 abs_denied: "حرمان",
                 abs_excused: "بعذر",
                 abs_unexcused: "بدون عذر",
-                abs_no_records: "لا توجد غيابات مسجلة لهذه المادة",
-                // Results Page Specific
-                gpaEvolution: "تطور المعدل الأكاديمي",
-                currentSemDetails: "تفاصيل درجات الفصل الحالي",
-                gradeRating: "الدرجة والتقييم",
-                grade_very_good: "جيد جداً",
-                lower_by: "أقل بـ",
-                level: "المستوى",
-                current: "الحالي",
-                comp_practical: "العملي",
-                comp_midterm: "النصفي",
-                comp_coursework: "أعمال سنة",
-                comp_final: "النهائي"
+                widget_ai: "سند (AI)",
+                widget_ask: "كيف أساعدك اليوم؟",
+                widget_appt: "المواعيد",
+                widget_no_appt: "لا توجد مواعيد قادمة",
+                // Accessibility
+                accessibility: "إمكانية الوصول",
+                darkMode: "الوضع الداكن",
+                textZoom: "حجم النص",
+                screenReader: "القارئ الصوتي",
+                highlightLinks: "تمييز الأزرار",
+                stopAnimations: "إيقاف الحركات",
+                resetSettings: "إعادة ضبط",
+                default: "افتراضي"
             },
             en: {
                 welcome: "Welcome", dashboard: "Home", academic: "Academic",
@@ -379,25 +389,25 @@
                 note_dean_approval: "Waiting for Dean's approval",
                 note_gpa_low: "GPA does not meet requirements",
                 // Course Names
-                course_math: "Mathematics",
-                course_physics: "Physics",
-                course_chem: "Chemistry",
-                course_cs: "Computer Science",
-                course_ar: "Arabic Language",
-                course_en: "English Language",
-                course_se: "Software Engineering",
-                course_os: "Operating Systems",
-                course_prog2: "Programming 2",
-                course_db: "Databases",
-                course_culture: "Islamic Culture 1",
-                course_ds: "Data Structures",
-                course_culture2: "Islamic Culture 2"
+                widget_ai: "Sanad (AI)",
+                widget_ask: "How can I help?",
+                widget_appt: "Appointments",
+                widget_no_appt: "No upcoming appointments",
+                // Accessibility
+                accessibility: "Accessibility",
+                darkMode: "Dark Mode",
+                textZoom: "Text Size",
+                screenReader: "Screen Reader",
+                highlightLinks: "Highlight Buttons",
+                stopAnimations: "Stop Animations",
+                resetSettings: "Reset Settings",
+                default: "Default"
             }
         };
 
-        // --- Helper Components ---
+        // --- HELPER COMPONENTS ---
         
-        const MobileHeader = ({ title, showBack, onBack, onProfile, onNotifications, t, darkMode, toggleDarkMode, lang, toggleLang }) => (
+        const MobileHeader = ({ title, showBack, onBack, onProfile, onNotifications, t, lang, toggleLang, onOpenAcc }) => (
             <header className="bg-white dark:bg-dark-card/90 backdrop-blur-md sticky top-0 z-30 border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex justify-between items-center shadow-sm">
                 <div className="flex items-center gap-2">
                     {showBack ? (
@@ -417,10 +427,10 @@
                         {lang === 'ar' ? 'EN' : 'ع'}
                     </button>
                     <button 
-                        onClick={toggleDarkMode} 
-                        className="p-2 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors active:scale-90 active:rotate-12"
+                        onClick={onOpenAcc} 
+                        className="p-2 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors active:scale-90"
                     >
-                        {darkMode ? <Sun size={20} className="text-yellow-500 fill-yellow-500"/> : <Moon size={20} />}
+                        <Accessibility size={20} />
                     </button>
                     <button onClick={onNotifications} className="p-2 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full relative">
                         <Bell size={20}/>
@@ -473,7 +483,86 @@
             </button>
         );
 
-        // --- Notifications Component (New) ---
+        // --- ACCESSIBILITY MENU COMPONENT ---
+        const AccessibilityMenu = ({ 
+            isOpen, onClose, t, darkMode, toggleDarkMode,
+            fontSize, setFontSize,
+            screenReader, setScreenReader,
+            highlightLinks, setHighlightLinks,
+            stopAnimations, setStopAnimations
+        }) => {
+            if (!isOpen) return null;
+
+            const resetSettings = () => {
+                setFontSize(16);
+                setScreenReader(false);
+                setHighlightLinks(false);
+                setStopAnimations(false);
+                if (darkMode) toggleDarkMode();
+            };
+
+            return (
+                <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/60 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+                    <div className="bg-white dark:bg-dark-card w-full max-w-md rounded-t-3xl shadow-2xl overflow-hidden border-t border-gray-100 dark:border-gray-700 chat-open" onClick={e => e.stopPropagation()}>
+                        <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800">
+                            <h3 className="font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                                <Accessibility className="text-primary" size={20}/> 
+                                {t.accessibility}
+                            </h3>
+                            <button onClick={onClose} className="p-2 bg-gray-200 dark:bg-gray-700 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition"><X size={16}/></button>
+                        </div>
+                        
+                        <div className="p-5 space-y-5 max-h-[70vh] overflow-y-auto">
+                            {/* Text Size */}
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg"><Type size={20}/></div>
+                                    <span className="font-bold text-gray-700 dark:text-gray-200 text-sm">{t.textZoom}</span>
+                                </div>
+                                <div className="flex items-center gap-3 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 border border-gray-200 dark:border-gray-700">
+                                    <button onClick={() => setFontSize(Math.max(12, fontSize - 2))} className="p-2 text-gray-600 dark:text-gray-300 hover:text-primary transition active:scale-90"><MinusCircle size={20}/></button>
+                                    <span className="font-mono font-bold text-sm min-w-[30px] text-center text-gray-800 dark:text-white">{fontSize}px</span>
+                                    <button onClick={() => setFontSize(Math.min(24, fontSize + 2))} className="p-2 text-gray-600 dark:text-gray-300 hover:text-primary transition active:scale-90"><PlusCircle size={20}/></button>
+                                </div>
+                            </div>
+
+                            {/* Toggles Grid */}
+                            <div className="grid grid-cols-2 gap-3">
+                                {/* Dark Mode */}
+                                <button onClick={toggleDarkMode} className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all duration-300 ${darkMode ? 'bg-primary/10 border-primary text-primary' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-primary/50'}`}>
+                                    {darkMode ? <Moon size={24}/> : <Sun size={24}/>}
+                                    <span className="text-xs font-bold">{t.darkMode}</span>
+                                </button>
+
+                                {/* Screen Reader */}
+                                <button onClick={() => setScreenReader(!screenReader)} className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all duration-300 ${screenReader ? 'bg-primary/10 border-primary text-primary' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-primary/50'}`}>
+                                    <Volume2 size={24}/>
+                                    <span className="text-xs font-bold text-center">{t.screenReader}</span>
+                                </button>
+
+                                {/* Highlight Links */}
+                                <button onClick={() => setHighlightLinks(!highlightLinks)} className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all duration-300 ${highlightLinks ? 'bg-primary/10 border-primary text-primary' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-primary/50'}`}>
+                                    <MousePointerClick size={24}/>
+                                    <span className="text-xs font-bold text-center">{t.highlightLinks}</span>
+                                </button>
+
+                                {/* Stop Animations */}
+                                <button onClick={() => setStopAnimations(!stopAnimations)} className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all duration-300 ${stopAnimations ? 'bg-primary/10 border-primary text-primary' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-primary/50'}`}>
+                                    <Pause size={24}/>
+                                    <span className="text-xs font-bold text-center">{t.stopAnimations}</span>
+                                </button>
+                            </div>
+
+                            {/* Reset Button */}
+                            <button onClick={resetSettings} className="w-full mt-4 flex items-center justify-center gap-2 p-3 text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl font-bold hover:bg-red-100 transition active:scale-95 border border-red-100 dark:border-red-800">
+                                <RotateCcw size={16}/> {t.resetSettings}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         const NotificationsPage = ({ onBack }) => {
             const notifications = [
                 { id: 1, title: "تم رصد درجة اختبار منتصف الفصل لمقرر هندسة البرمجيات", date: "منذ ساعتين", type: "academic", read: false },
@@ -2378,9 +2467,60 @@
                 { name: 'فيزياء عامة', nameEn: 'General Physics', absencePct: 16 }
             ];
             
+            // New State for Tasks Widget
+            const [tasks, setTasks] = useState([
+                { id: 1, text: "تسليم تقرير المعمل", textEn: "Submit Lab Report", completed: false, priority: 'high' },
+                { id: 2, text: "مذاكرة الاختبار النصفي", textEn: "Study for Midterm", completed: false, priority: 'medium' },
+                { id: 3, text: "تجديد اشتراك النادي", textEn: "Renew Club Membership", completed: true, priority: 'low' },
+            ]);
+
+            const toggleTask = (id) => {
+                setTasks(tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+            };
+            
             // حساب الساعات المتبقية
             const remainingHours = studentData.totalHours - studentData.completedHours - studentData.currentHours;
             const completionPercentage = Math.round(((studentData.completedHours + studentData.currentHours) / studentData.totalHours) * 100);
+
+            // بيانات المواعيد التي تنتهي قريباً
+            const upcomingDeadlines = [
+                { 
+                    id: 'dept-add', 
+                    title: lang === 'ar' ? 'إضافة مقرر (القسم)' : 'Add Course (Dept)', 
+                    remaining: lang === 'ar' ? 'يغلق بعد يومين' : 'Closes in 2 days', 
+                    icon: PlusCircle, 
+                    color: 'text-blue-600', 
+                    borderColor: 'border-blue-200 dark:border-blue-800',
+                    bg: 'bg-blue-50 dark:bg-blue-900/10' 
+                },
+                { 
+                    id: 'dept-change', 
+                    title: lang === 'ar' ? 'تغيير شعبة (القسم)' : 'Change Section (Dept)', 
+                    remaining: lang === 'ar' ? 'يغلق بعد يومين' : 'Closes in 2 days', 
+                    icon: RefreshCw, 
+                    color: 'text-indigo-600 dark:text-indigo-400', 
+                    borderColor: 'border-indigo-200 dark:border-indigo-800',
+                    bg: 'bg-indigo-50 dark:bg-indigo-900/10' 
+                },
+                { 
+                    id: 'dept-drop', 
+                    title: lang === 'ar' ? 'حذف مقرر (القسم)' : 'Drop Course (Dept)', 
+                    remaining: lang === 'ar' ? 'يغلق بعد 4 أيام' : 'Closes in 4 days', 
+                    icon: MinusCircle, 
+                    color: 'text-rose-600 dark:text-rose-400', 
+                    borderColor: 'border-rose-200 dark:border-rose-800',
+                    bg: 'bg-rose-50 dark:bg-rose-900/10' 
+                },
+                { 
+                    id: 'academic-action-new', 
+                    title: lang === 'ar' ? 'الحركات الأكاديمية' : 'Academic Actions', 
+                    remaining: lang === 'ar' ? 'يغلق بعد 5 أيام' : 'Closes in 5 days', 
+                    icon: FileText, 
+                    color: 'text-amber-700 dark:text-amber-500', 
+                    borderColor: 'border-amber-200 dark:border-amber-800',
+                    bg: 'bg-amber-50 dark:bg-amber-900/10' 
+                }
+            ];
 
             return (
                 <div className="p-4 space-y-6 animate-fade-in pb-20">
@@ -2396,11 +2536,40 @@
                         <h3 className={`text-sm font-bold text-gray-400 uppercase mb-3 tracking-wider flex items-center gap-2 ${lang === 'ar' ? 'pr-2' : 'pl-2'}`}>{t.quickActions}</h3>
                         <div className="grid grid-cols-3 gap-3">
                             <ActionCard icon={<Calendar size={24}/>} title={t.schedule} onClick={() => setSubView('schedule')} />
-                            <ActionCard icon={<RefreshCw size={24}/>} title={t.addDrop} onClick={() => setSubView('addDrop')} color="blue" />
+                            <ActionCard icon={<RefreshCw size={24}/>} title={t.electronicReg} onClick={() => setSubView('addDrop')} color="blue" />
                             <ActionCard icon={<FileText size={24}/>} title={t.results} onClick={() => setSubView('results')} color="gold" />
                         </div>
                     </div>
                     
+                    {/* مواعيد تنتهي قريباً (Upcoming Deadlines Widget) - تصميم مطابق للصورة المرفقة */}
+                    <div className="-mx-4"> {/* Negative margin ليمتد التمرير لنهاية الشاشة */}
+                        <div className="flex justify-between items-center mb-3 px-4">
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                                <span className="w-1 h-4 bg-red-500 rounded-full"></span>
+                                {lang === 'ar' ? 'مواعيد تنتهي قريباً' : 'Upcoming Deadlines'}
+                            </h3>
+                        </div>
+                        <div className="flex overflow-x-auto gap-3 px-4 pb-2 [&::-webkit-scrollbar]:hidden snap-x" style={{ WebkitOverflowScrolling: 'touch' }}>
+                            {upcomingDeadlines.map((deadline, idx) => (
+                                <button 
+                                    key={idx} 
+                                    onClick={() => setSubView(deadline.id)} 
+                                    className={`flex-shrink-0 min-w-[220px] flex items-center justify-between p-3 rounded-2xl border ${deadline.borderColor} ${deadline.bg} hover:shadow-md transition-all text-start group active:scale-[0.98] snap-center`}
+                                >
+                                    <div className="flex-1 pl-2">
+                                        <h4 className={`font-bold text-sm ${deadline.color} mb-1 leading-snug pr-2`}>{deadline.title}</h4>
+                                        <p className={`text-xs ${deadline.color} flex items-center gap-1 opacity-80 pr-2`}>
+                                            <Clock size={10}/> {deadline.remaining}
+                                        </p>
+                                    </div>
+                                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-dark-card flex items-center justify-center shadow-sm flex-shrink-0">
+                                        <deadline.icon size={20} className={deadline.color} strokeWidth={1.5} />
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     {/* New Design GPA Card (Compact & Swapped Layout) */}
                     <div className="bg-[#1a5f6a] rounded-3xl p-5 text-white shadow-xl relative overflow-hidden">
                         {/* Top Section */}
@@ -2568,6 +2737,14 @@
             const [showChat, setShowChat] = useState(false);
             const [lang, setLang] = useState('ar');
             
+            // Accessibility States
+            const [isAccMenuOpen, setIsAccMenuOpen] = useState(false);
+            const [fontSize, setFontSize] = useState(16);
+            const [screenReader, setScreenReader] = useState(false);
+            const [highlightLinks, setHighlightLinks] = useState(false);
+            const [stopAnimations, setStopAnimations] = useState(false);
+            
+            // Effects for Accessibility
             useEffect(() => { 
                 document.documentElement.classList.toggle('dark', darkMode); 
             }, [darkMode]);
@@ -2576,6 +2753,46 @@
                 document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
                 document.documentElement.lang = lang;
             }, [lang]);
+
+            useEffect(() => {
+                // Apply Font Size
+                document.documentElement.style.fontSize = `${fontSize}px`;
+                
+                // Apply Stop Animations
+                if (stopAnimations) {
+                    document.body.classList.add('stop-animations');
+                } else {
+                    document.body.classList.remove('stop-animations');
+                }
+
+                // Apply Highlight Links
+                if (highlightLinks) {
+                    document.body.classList.add('highlight-links');
+                } else {
+                    document.body.classList.remove('highlight-links');
+                }
+            }, [fontSize, stopAnimations, highlightLinks]);
+
+            useEffect(() => {
+                // Screen Reader Logic
+                if (!screenReader) {
+                    window.speechSynthesis?.cancel();
+                    return;
+                }
+                const handleSpeak = (e) => {
+                    const target = e.target.closest('button, a, h1, h2, h3, h4, p, span, li');
+                    if (target && target.innerText) {
+                        window.speechSynthesis?.cancel();
+                        const msg = new SpeechSynthesisUtterance(target.innerText);
+                        msg.lang = lang === 'ar' ? 'ar-SA' : 'en-US';
+                        window.speechSynthesis?.speak(msg);
+                    }
+                };
+                // Use capture phase to ensure it triggers before any stopPropagation
+                document.addEventListener('click', handleSpeak, true);
+                return () => document.removeEventListener('click', handleSpeak, true);
+            }, [screenReader, lang]);
+
 
             const t = translations[lang];
             const goHome = () => { setSubView(null); };
@@ -2650,10 +2867,9 @@
                         onProfile={() => {setMainTab('personal'); setSubView('user-account');}} 
                         onNotifications={() => setSubView('notifications')} 
                         t={t} 
-                        darkMode={darkMode}
-                        toggleDarkMode={() => setDarkMode(!darkMode)}
                         lang={lang}
                         toggleLang={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+                        onOpenAcc={() => setIsAccMenuOpen(true)}
                     />
                     <main className="flex-1 w-full overflow-y-auto pb-16">{renderContent()}</main>
                     
@@ -2667,6 +2883,17 @@
                     </button>
                     
                     <ChatbotWidget isOpen={showChat} onClose={() => setShowChat(false)} />
+                    
+                    <AccessibilityMenu 
+                        isOpen={isAccMenuOpen} 
+                        onClose={() => setIsAccMenuOpen(false)} 
+                        t={t}
+                        darkMode={darkMode} toggleDarkMode={() => setDarkMode(!darkMode)}
+                        fontSize={fontSize} setFontSize={setFontSize}
+                        screenReader={screenReader} setScreenReader={setScreenReader}
+                        highlightLinks={highlightLinks} setHighlightLinks={setHighlightLinks}
+                        stopAnimations={stopAnimations} setStopAnimations={setStopAnimations}
+                    />
                     
                     <BottomNavBar mainTab={mainTab} setMainTab={(tab) => { setMainTab(tab); goHome(); }} t={t} />
                 </div>
